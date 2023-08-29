@@ -9,7 +9,9 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.tlsresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
