@@ -88,6 +88,8 @@ services:
     networks:
       default:
       proxy:
+    ports:
+      - 2283:8080
     environment:
       # Make sure these values get passed through from the env file
       - IMMICH_SERVER_URL
