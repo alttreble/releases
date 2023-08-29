@@ -10,6 +10,8 @@ services:
       - portainer_data:/data
     ports:
       - 9000:9000
+    networks:
+      proxy:
     labels:
       # Frontend
       - "traefik.enable=true"
@@ -18,5 +20,11 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=9443"
       - "traefik.http.routers.frontend.service=frontend"
       - "traefik.http.routers.frontend.tls.certresolver=tlsresolver"
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
+        
 volumes:
   portainer_data:
