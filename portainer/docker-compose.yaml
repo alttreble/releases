@@ -15,11 +15,11 @@ services:
     labels:
       # Frontend
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`portainer.treble.bg`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.services.frontend.loadbalancer.server.port=9443"
-      - "traefik.http.routers.frontend.service=portainer-ui"
-      - "traefik.http.routers.frontend.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.treble.bg`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9443"
+      - "traefik.http.routers.portainer.service=portainer"
+      - "traefik.http.routers.portainer.tls.certresolver=tlsresolver"
 
 networks:
   proxy:
