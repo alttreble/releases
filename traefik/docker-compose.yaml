@@ -23,6 +23,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.treble.bg`)"
       - "traefik.http.routers.traefi.service=api@internal"
+      - "traefik.http.services.portainer.loadbalancer.server.port=8080"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=tlsresolver"
     ports:
