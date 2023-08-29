@@ -100,7 +100,7 @@ services:
       - "traefik.http.routers.immich.rule=Host(`photos.treble.bg`)"
       - "traefik.http.routers.immich.entrypoints=websecure"
       - "traefik.http.services.immich.loadbalancer.server.port=8080"
-      - "traefik.http.routers.immich.service=portainer"
+      - "traefik.http.routers.immich.service=immich"
       - "traefik.http.routers.immich.tls.certresolver=tlsresolver"
     restart: always
 
