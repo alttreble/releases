@@ -13,6 +13,7 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.exposedbydefault=false"
       - "--certificatesresolvers.tlsresolver.acme.tlschallenge=true"
       # - "--certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--certificatesresolvers.tlsresolver.acme.email=business@treble.bg"
