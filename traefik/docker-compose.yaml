@@ -15,6 +15,7 @@ services:
       - "--certificatesresolvers.tlsresolver.acme.email=business@treble.bg"
       - "--certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json"
     ports:
+      - "80:80"
       - "443:443"
       - "8080:8080"
     volumes:
