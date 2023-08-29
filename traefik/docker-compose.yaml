@@ -27,6 +27,8 @@ services:
   whoami:
     image: "traefik/whoami"
     container_name: "simple-service"
+    networks:
+      proxy:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`whoami.treble.bg`)"
