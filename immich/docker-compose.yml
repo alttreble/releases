@@ -94,14 +94,12 @@ services:
       - pgdata:/var/lib/postgresql/data
     restart: always
 
-  immich-proxy:
-    container_name: immich_proxy
+  immich:
+    container_name: immich
     image: ghcr.io/immich-app/immich-proxy:${IMMICH_VERSION:-release}
     networks:
       default:
       proxy:
-    ports:
-      - 2283:8080
     environment:
       # Make sure these values get passed through from the env file
       - IMMICH_SERVER_URL
