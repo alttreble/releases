@@ -1,7 +1,6 @@
 version: "3.3"
 
 services:
-
   traefik:
     image: "traefik:v2.10"
     container_name: "traefik"
@@ -37,3 +36,4 @@ services:
 
 networks:
   proxy:
+    name: "proxy"
