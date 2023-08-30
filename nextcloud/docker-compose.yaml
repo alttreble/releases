@@ -9,9 +9,6 @@ services:
     image: mariadb:10.6
     restart: always
     command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
-    networks:
-      - "default"
-      - "proxy"
     volumes:
       - db:/var/lib/mysql
     environment:
@@ -45,11 +42,9 @@ services:
       - "traefik.http.routers.nextcloud.rule=Host(`files.treble.bg`)"
       - "traefik.http.routers.nextcloud.entrypoints=websecure"
       - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
-      - "traefik.http.routers.nextcloud.service=nextcloud"
       - "traefik.http.routers.nextcloud.tls.certresolver=tlsresolver"
 
 networks:
-  default:
   proxy:
     name: "proxy"
     external: true
