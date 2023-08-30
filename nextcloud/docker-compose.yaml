@@ -30,6 +30,8 @@ services:
       proxy:
     volumes:
       - nextcloud:/var/www/html
+    ports:
+      - "2285:80"
     environment:
       - MYSQL_PASSWORD
       - MYSQL_DATABASE=nextcloud
