@@ -39,10 +39,6 @@ services:
       - MYSQL_HOST=db
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD
-      - SMTP_HOST
-      - SMTP_PORT
-      - SMTP_NAME
-      - SMTP_PASSWORD
     labels:
       # Frontend
       - "traefik.enable=true"
