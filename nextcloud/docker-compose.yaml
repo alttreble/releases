@@ -15,8 +15,8 @@ services:
     volumes:
       - db:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD
-      - MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD={$MYSQL_ROOT_PASSWORD}
+      - MYSQL_PASSWORD={$MYSQL_PASSWORD}
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
 
@@ -33,7 +33,7 @@ services:
     ports:
       - "2285:80"
     environment:
-      - MYSQL_PASSWORD
+      - MYSQL_PASSWORD={$MYSQL_PASSWORD}
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
       - MYSQL_HOST=db
@@ -47,6 +47,7 @@ services:
       - "traefik.http.routers.nextcloud.tls.certresolver=tlsresolver"
 
 networks:
+  default:
   proxy:
     name: "proxy"
     external: true
