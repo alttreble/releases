@@ -11,6 +11,8 @@ services:
     command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
     volumes:
       - db:/var/lib/mysql
+    networks:
+      - "default"
     environment:
       - MYSQL_ROOT_PASSWORD
       - MYSQL_PASSWORD
@@ -44,6 +46,7 @@ services:
       - "traefik.http.routers.nextcloud.tls.certresolver=tlsresolver"
 
 networks:
+  default:
   proxy:
     name: "proxy"
     external: true
