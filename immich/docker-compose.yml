@@ -106,6 +106,7 @@ services:
       - immich-web
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.immich.rule=Host(`photos.treble.bg`)"
       - "traefik.http.routers.immich.entrypoints=websecure"
       - "traefik.http.services.immich.loadbalancer.server.port=8080"
