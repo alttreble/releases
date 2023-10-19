@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:4.4.0
+    command: mongod --oplogSize 128 --replSet rs0 --storageEngine=wiredTiger --auth
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    networks:
+      default:
+      proxy:
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-db4-roberts:/data/db
+    healthcheck:
+      test: test $$(echo "rs.status().ok || rs.initiate().ok" | mongo --quiet -u ${MONGO_INITDB_ROOT_USERNAME} -p ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin) -eq 1
+      interval: 10s
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.tcp.routers.opencommerce-mongo.rule=Host(`opencommerce-mongo.treble.bg`)"
+      - "traefik.tcp.routers.opencommerce-mongo.entrypoints=mongodb"
+      - "traefik.tcp.services.opencommerce-mongo.loadbalancer.server.port=27017"
+      - "traefik.tcp.routers.opencommerce-mongo.tls.certresolver=tlsresolver"
+  redis:
+    image: redis:7
+    networks:
+      default:
+      proxy:
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo-db4-roberts:
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
