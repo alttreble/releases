@@ -3,7 +3,7 @@ version: "3.8"
 services:
   mongo:
     image: mongo:4.4.0
-    command: mongod --oplogSize 128 --storageEngine=wiredTiger
+    command: mongod --oplogSize 128 --replSet rs0 --storageEngine=wiredTiger
     networks:
       default:
       proxy:
