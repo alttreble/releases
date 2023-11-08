@@ -19,7 +19,7 @@ services:
       interval: 10s
       start_period: 30s
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=false"
       - "traefik.docker.network=proxy"
       - "traefik.tcp.routers.opencommerce-mongo.rule=Host(`opencommerce-mongo.treble.bg`)"
       - "traefik.tcp.routers.opencommerce-mongo.entrypoints=mongodb"
