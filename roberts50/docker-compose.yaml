@@ -5,8 +5,8 @@ services:
     image: mongo:4.4.0
     command: mongod --oplogSize 128 --replSet rs0 --storageEngine=wiredTiger
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      # - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      # - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     networks:
       default:
       proxy:
@@ -15,7 +15,7 @@ services:
     volumes:
       - mongo-db4-roberts:/data/db
     healthcheck:
-      test: test $$(echo "rs.status().ok || rs.initiate().ok" | mongo --quiet -u ${MONGO_INITDB_ROOT_USERNAME} -p ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin) -eq 1
+      test: test $$(echo "rs.status().ok || rs.initiate().ok" | mongo --quiet) -eq 1
       interval: 10s
       start_period: 30s
     labels:
