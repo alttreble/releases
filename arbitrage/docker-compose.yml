@@ -4,10 +4,12 @@ services:
     image: tedraykov/arbitrage-bot:latest
     restart: always
     container_name: arbitrage
+    depends_on:
+      - 'mongodb'
   mongodb:
     image: mongo:7
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - arbitrage_data:/data/db
 
