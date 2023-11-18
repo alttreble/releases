@@ -5,9 +5,9 @@ services:
     restart: always
     container_name: arbitrage
     environment:
-      - MONGO_URL: ${MONGO_URL}
-      - APP_ENV: ${APP_ENV}
-      - LOG_LEVEL: ${LOG_LEVEL}
+      - MONGO_URL
+      - APP_ENV
+      - LOG_LEVEL
     depends_on:
       - 'mongodb'
   mongodb:
