@@ -17,7 +17,7 @@ services:
     expose:
       - 5432
     volumes: 
-      - /mnt/drive1/config/perfect/db:/var/lib/postgresql/data
+      - /mnt/drive1/config/prefect/db:/var/lib/postgresql/data
     networks:
       default:
   
@@ -38,8 +38,8 @@ services:
       - /mnt/drive1/config/prefect:/root/.prefect
     entrypoint: ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
     environment:
-      - PREFECT_UI_URL=https://perfect.treble.bg/api
-      - PREFECT_API_URL=https://perfect.treble.bg/api
+      - PREFECT_UI_URL=https://prefect.treble.bg/api
+      - PREFECT_API_URL=https://prefect.treble.bg/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
       - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@database:5432/prefect
       # Uncomment the following line if you want to use the 'S3 Bucket' storage block instead of the older 'S3' storage
@@ -52,10 +52,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.perfect.rule=Host(`perfect.treble.bg`)"
-      - "traefik.http.routers.perfect.entrypoints=websecure"
-      - "traefik.http.routers.perfect.tls.certresolver=tlsresolver"
-      - "traefik.http.services.perfect.loadbalancer.server.port=4200"
+      - "traefik.http.routers.prefect.rule=Host(`perfect.treble.bg`)"
+      - "traefik.http.routers.prefect.entrypoints=websecure"
+      - "traefik.http.routers.prefect.tls.certresolver=tlsresolver"
+      - "traefik.http.services.prefect.loadbalancer.server.port=4200"
 
   ## Prefect Agent
   agent:
@@ -75,7 +75,7 @@ services:
     entrypoint: "bash"
     working_dir: "/root/flows"
     volumes:
-      - "/mnt/drive1/config/perfect/flows:/root/flows"
+      - "/mnt/drive1/config/prefect/flows:/root/flows"
     environment:
       - PREFECT_API_URL=http://server:4200/api
 #       Use PREFECT_API_KEY to use the CLI to interact with Prefect Cloud
