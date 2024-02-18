@@ -20,8 +20,8 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.size=256MB
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
+      - traefik.enable=true
+      - traefik.docker.network=proxy
       - traefik.http.routers.prometheus.rule=Host(`prometheus.treble.bg`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
@@ -44,6 +44,8 @@ services:
       - /mnt/drive1/config/grafana/data:/var/lib/grafana
       - /mnt/drive1/config/grafana/settings/:/etc/grafana/provisioning/
     labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
       - traefik.http.routers.grafana.rule=Host(`grafana.treble.bg`)
       - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.tls.certresolver=tlsresolver
@@ -71,6 +73,8 @@ services:
       default:
       proxy:
     labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
       - traefik.http.routers.loki.rule=Host(`loki.treble.bg`)
       - traefik.http.routers.loki.entrypoints=websecure
       - traefik.http.routers.loki.tls.certresolver=tlsresolver
