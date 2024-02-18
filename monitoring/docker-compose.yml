@@ -1,0 +1,121 @@
+version: '3.9'
+
+x-logging: &loki-logging
+  driver: json-file
+  options:
+    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+services:
+  prometheus:
+    # run as root, update to rootless mode later
+    user: "0:0"
+    hostname: prometheus
+    container_name: prometheus
+    image: prom/prometheus:v2.47.0
+    volumes:
+      - /mnt/drive1/config/prometheus/settings/:/etc/prometheus/
+      - /mnt/drive1/config/prometheus/data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.size=256MB
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - traefik.http.routers.prometheus.rule=Host(prometheus.treble.bg`)
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+      - traefik.http.routers.prometheus.tls.certresolver=tlsresolver
+    networks:
+      - defualt
+      - proxy
+    restart: unless-stopped
+    logging: *loki-logging
+
+  grafana:
+    # run as root, update to rootless mode later
+    user: "0:0"
+    hostname: grafana
+    container_name: grafana
+    image: grafana/grafana:10.0.5
+    depends_on:
+      - traefik
+      - prometheus
+    volumes:
+      - /mnt/drive1/config/grafana/data:/var/lib/grafana
+      - /mnt/drive1/config/grafana/settings/:/etc/grafana/provisioning/
+    labels:
+      - traefik.http.routers.grafana.rule=Host(`grafana.treble.bg`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.frafana.tls.certresolver=tlsresolver
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    networks:
+      - default
+      - proxy
+    restart: unless-stopped
+    logging: *loki-logging
+
+  loki:
+    # run as root, update to rootless mode later
+    user: "0:0"
+    hostname: loki
+    container_name: loki
+    image: grafana/loki:2.9.0
+    command: -config.file=/mnt/config/loki-config.yml
+    restart: unless-stopped
+    volumes:
+      - /mnt/drive1/config/loki/data:/loki
+      - /mnt/drive1/config/loki/settings/loki-config.yml:/mnt/config/loki-config.yml
+    ports:
+      - 127.0.0.1:3100:3100
+    networks:
+      - internalnetwork
+    labels:
+      - traefik.http.routers.loki.rule=Host(`loki.treble.bg`)
+      - traefik.http.routers.loki.entrypoints=websecure
+      - traefik.http.routers.frafana.tls.certresolver=tlsresolver
+      - traefik.http.services.loki.loadbalancer.server.port=3100
+    logging: *loki-logging
+
+  promtail:
+    # run as root, update to rootless mode later
+    user: "0:0"
+    hostname: promtail
+    container_name: promtail
+    restart: unless-stopped
+    image: grafana/promtail:2.9.0
+    volumes:
+      # logs for linux host only
+      #- /var/log:/host/log
+      - /var/lib/docker/containers:/host/containers
+      - /mnt/drive1/config/promtail/settings/promtail-config.yaml:/mnt/config/promtail-config.yaml
+    command: -config.file /mnt/config/promtail-config.yaml
+    networks:
+      - default
+    logging: *loki-logging
+
+  nodeexporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: nodeexporter
+    hostname: nodeexporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    expose:
+      - 9100
+    networks:
+      - default
+    logging: *loki-logging
+
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
