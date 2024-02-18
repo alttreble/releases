@@ -46,7 +46,7 @@ services:
     labels:
       - traefik.http.routers.grafana.rule=Host(`grafana.treble.bg`)
       - traefik.http.routers.grafana.entrypoints=websecure
-      - traefik.http.routers.frafana.tls.certresolver=tlsresolver
+      - traefik.http.routers.grafana.tls.certresolver=tlsresolver
       - traefik.http.services.grafana.loadbalancer.server.port=3000
     networks:
       default:
@@ -73,7 +73,7 @@ services:
     labels:
       - traefik.http.routers.loki.rule=Host(`loki.treble.bg`)
       - traefik.http.routers.loki.entrypoints=websecure
-      - traefik.http.routers.frafana.tls.certresolver=tlsresolver
+      - traefik.http.routers.loki.tls.certresolver=tlsresolver
       - traefik.http.services.loki.loadbalancer.server.port=3100
     logging: *loki-logging
 
