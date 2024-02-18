@@ -22,7 +22,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - traefik.http.routers.prometheus.rule=Host(prometheus.treble.bg`)
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.treble.bg`)
       - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
       - traefik.http.routers.prometheus.tls.certresolver=tlsresolver
