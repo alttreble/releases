@@ -118,7 +118,6 @@ services:
       default:
     logging: *loki-logging
 
-
 networks:
   proxy:
     name: "proxy"

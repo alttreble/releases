@@ -1,5 +1,10 @@
 version: "3.3"
 
+x-logging: &loki-logging
+  driver: json-file
+  options:
+    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
 services:
   traefik:
     image: "traefik:v2.10"
@@ -15,6 +20,15 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.mongodb.address=:27017"
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entryPoint=metrics
+      - --entryPoints.metrics.address=:8082
+      - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
+
+      - --accesslog=true
+      - --accesslog.filepath=/traefik/logs/access.log
+      - --accesslog.bufferingsize=100
+
       - "--providers.docker.exposedbydefault=false"
       - "--certificatesresolvers.tlsresolver.acme.tlschallenge=true"
       # - "--certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -33,6 +47,7 @@ services:
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    logging: *loki-logging
 
 networks:
   proxy:
