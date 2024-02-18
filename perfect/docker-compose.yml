@@ -32,7 +32,7 @@ services:
 
   ### Prefect Server API and UI
   server:
-    image: prefecthq/prefect:2.11.5-python3.11
+    image: prefecthq/prefect:2-python3.11-conda
     restart: always
     volumes:
       - /mnt/drive1/config/prefect:/root/.prefect
@@ -54,8 +54,8 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.perfect.rule=Host(`perfect.treble.bg`)"
       - "traefik.http.routers.perfect.entrypoints=websecure"
-      - "traefik.http.services.perfect.loadbalancer.server.port=4200"
       - "traefik.http.routers.perfect.tls.certresolver=tlsresolver"
+      - "traefik.http.services.perfect.loadbalancer.server.port=4200"
 
   ## Prefect Agent
   agent:
