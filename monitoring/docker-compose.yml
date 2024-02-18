@@ -69,7 +69,8 @@ services:
     ports:
       - 127.0.0.1:3100:3100
     networks:
-      - internalnetwork
+      - default
+      - proxy
     labels:
       - traefik.http.routers.loki.rule=Host(`loki.treble.bg`)
       - traefik.http.routers.loki.entrypoints=websecure
