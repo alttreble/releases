@@ -27,8 +27,8 @@ services:
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
       - traefik.http.routers.prometheus.tls.certresolver=tlsresolver
     networks:
-      - defualt
-      - proxy
+      defualt:
+      proxy:
     restart: unless-stopped
     logging: *loki-logging
 
@@ -39,7 +39,6 @@ services:
     container_name: grafana
     image: grafana/grafana:10.0.5
     depends_on:
-      - traefik
       - prometheus
     volumes:
       - /mnt/drive1/config/grafana/data:/var/lib/grafana
@@ -50,8 +49,8 @@ services:
       - traefik.http.routers.frafana.tls.certresolver=tlsresolver
       - traefik.http.services.grafana.loadbalancer.server.port=3000
     networks:
-      - default
-      - proxy
+      defualt:
+      proxy:
     restart: unless-stopped
     logging: *loki-logging
 
@@ -69,8 +68,8 @@ services:
     ports:
       - 127.0.0.1:3100:3100
     networks:
-      - default
-      - proxy
+      default:
+      proxy:
     labels:
       - traefik.http.routers.loki.rule=Host(`loki.treble.bg`)
       - traefik.http.routers.loki.entrypoints=websecure
@@ -92,7 +91,7 @@ services:
       - /mnt/drive1/config/promtail/settings/promtail-config.yaml:/mnt/config/promtail-config.yaml
     command: -config.file /mnt/config/promtail-config.yaml
     networks:
-      - default
+      default:
     logging: *loki-logging
 
   nodeexporter:
@@ -112,7 +111,7 @@ services:
     expose:
       - 9100
     networks:
-      - default
+      default:
     logging: *loki-logging
 
 
