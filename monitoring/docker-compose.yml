@@ -49,7 +49,7 @@ services:
       - traefik.http.routers.frafana.tls.certresolver=tlsresolver
       - traefik.http.services.grafana.loadbalancer.server.port=3000
     networks:
-      defualt:
+      default:
       proxy:
     restart: unless-stopped
     logging: *loki-logging
