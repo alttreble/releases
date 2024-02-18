@@ -52,7 +52,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.prefect.rule=Host(`perfect.treble.bg`)"
+      - "traefik.http.routers.prefect.rule=Host(`prefect.treble.bg`)"
       - "traefik.http.routers.prefect.entrypoints=websecure"
       - "traefik.http.routers.prefect.tls.certresolver=tlsresolver"
       - "traefik.http.services.prefect.loadbalancer.server.port=4200"
