@@ -1,0 +1,23 @@
+version: "3"
+services:
+  structurizr:
+    image: structurizr/onpremises
+    container_name: structurizr
+    restart: always
+    volumes:
+      - /mnt/drive1/config/structurizr:/usr/local/structurizr
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.c4.rule=Host(`c4.treble.bg`)"
+      - "traefik.http.routers.c4.entrypoints=websecure"
+      - "traefik.http.routers.c4.tls.certresolver=tlsresolver"
+      - "traefik.http.services.c4.loadbalancer.server.port=8080"
+    networks:
+      default:
+      proxy:
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
