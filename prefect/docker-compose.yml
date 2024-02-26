@@ -32,7 +32,7 @@ services:
 
   ### Prefect Server API and UI
   server:
-    image: prefecthq/prefect:2-python3.11-conda
+    image: prefecthq/2.16-python3.12-conda
     restart: always
     volumes:
       - /mnt/drive1/config/prefect:/root/.prefect
