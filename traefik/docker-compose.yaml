@@ -12,14 +12,15 @@ services:
     networks:
       proxy:
     command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.mongodb.address=:27017"
+      - --log.level=DEBUG
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.mongodb.address=:27017
+      - --entrypoints.kafka.address=:9094
       - --metrics.prometheus=true
       - --metrics.prometheus.entryPoint=metrics
       - --entryPoints.metrics.address=:8082
@@ -29,18 +30,18 @@ services:
       - --accesslog.filepath=/traefik/logs/access.log
       - --accesslog.bufferingsize=100
 
-      - "--providers.docker.exposedbydefault=false"
-      - "--certificatesresolvers.tlsresolver.acme.tlschallenge=true"
-      # - "--certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-      - "--certificatesresolvers.tlsresolver.acme.email=business@treble.bg"
-      - "--certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json"
+      - --providers.docker.exposedbydefault=false
+      - --certificatesresolvers.tlsresolver.acme.tlschallenge=true
+      # - --certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.tlsresolver.acme.email=business@treble.bg
+      - --certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json
 
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.treble.bg`)"
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls.certresolver=tlsresolver"
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.treble.bg`)
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+      - traefik.http.routers.traefik.entrypoints=websecure
+      - traefik.http.routers.traefik.tls.certresolver=tlsresolver
     ports:
       - "80:80"
       - "443:443"

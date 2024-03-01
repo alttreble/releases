@@ -1,0 +1,64 @@
+version: "3.8"
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_HEAP_OPTS: "-Xmx256M -Xms128M" # Limiting Zookeeper's heap size
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${DOCKER_HOST_IP:-localhost}:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M" # Limiting Kafka's heap size
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.tcp.routers.kafka.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.kafka.entrypoints=kafka"
+      - "traefik.tcp.services.kafka.loadbalancer.server.port=9094"
+      - "traefik.tcp.routers.kafka.service=kafka"
+      - "traefik.tcp.routers.kafka.tls.certresolver=tlsresolver"
+    networks:
+      default:
+      proxy:
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "9000:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.kafkaui.rule=Host(`kafka.treble.bg`)"
+      - "traefik.http.routers.kafkaui.entrypoints=websecure"
+      - "traefik.http.services.kafkaui.loadbalancer.server.port=9000"
+      - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
+    networks:
+      default:
+      proxy:
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
+
+volumes:
+  postgres_data:
+
