@@ -38,7 +38,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
-      - "9000:8080"
+      - "9095:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
@@ -48,7 +48,7 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.kafkaui.rule=Host(`kafka.treble.bg`)"
       - "traefik.http.routers.kafkaui.entrypoints=websecure"
-      - "traefik.http.services.kafkaui.loadbalancer.server.port=9000"
+      - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
       - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
     networks:
       default:
