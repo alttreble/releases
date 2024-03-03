@@ -20,7 +20,7 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.websecure.address=:443
       - --entrypoints.mongodb.address=:27017
-      - --entrypoints.kafka.address=:9094
+      - --entrypoints.kafka.address=:9093
       - --metrics.prometheus=true
       - --metrics.prometheus.entryPoint=metrics
       - --entryPoints.metrics.address=:8082

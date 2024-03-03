@@ -8,12 +8,15 @@ services:
       KAFKA_HEAP_OPTS: "-Xmx256M -Xms128M" # Limiting Zookeeper's heap size
     ports:
       - "2181:2181"
+    networks:
+      default:
 
   kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
       - zookeeper
     ports:
+      - "9092:9092"
       - "9093:9093"
     environment:
       KAFKA_BROKER_ID: 1
@@ -39,7 +42,7 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.tcp.routers.kafka.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.kafka.entrypoints=kafka"
-      - "traefik.tcp.services.kafka.loadbalancer.server.port=9094"
+      - "traefik.tcp.services.kafka.loadbalancer.server.port=9093"
       - "traefik.tcp.routers.kafka.service=kafka"
       - "traefik.tcp.routers.kafka.tls.certresolver=tlsresolver"
     networks:
@@ -57,7 +60,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.kafkaui.rule=Host(`kafka.treble.bg`)"
+      - "traefik.http.routers.kafkaui.rule=Host(`kafka-ui.treble.bg`)"
       - "traefik.http.routers.kafkaui.entrypoints=websecure"
       - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
       - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
