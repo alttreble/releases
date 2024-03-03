@@ -22,13 +22,13 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
       KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
-      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.jks
-      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.jks
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.jks
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
       KAFKA_SSL_CLIENT_AUTH: required
       # Define credentials (replace with your values)
-      KAFKA_SSL_KEYSTORE_CREDENTIALS: "kafka_keystore_creds"
-      KAFKA_SSL_KEY_CREDENTIALS: "kafka_key_creds"
-      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: "changeit"
+      KAFKA_SSL_KEYSTORE_PASSWORD: "kafka_keystore_creds"
+      KAFKA_SSL_KEY_PASSWORD: "kafka_key_creds"
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: "changeit"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M" # Limiting Kafka's heap size
     volumes:
