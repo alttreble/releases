@@ -20,8 +20,8 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,SASL_SSL://kafka:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL
-      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
-      KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
       KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
       KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.client.truststore.jks
       KAFKA_SSL_CLIENT_AUTH: required
@@ -30,9 +30,10 @@ services:
       KAFKA_SSL_KEY_CREDENTIALS: key_creds
       KAFKA_SSL_TRUSTSTORE_CREDENTIALS: truststore_creds
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
       KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M" # Limiting Kafka's heap size
     volumes:
-      - /mnt/drive1/config/kafka/secrets:/etc/kafka/secrets
+      - /mnt/drive1/config/kafka:/etc/kafka
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
