@@ -29,7 +29,6 @@ services:
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
       KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
       KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.client.truststore.jks
-      KAFKA_SSL_CLIENT_AUTH: required
       # Define credentials (replace with your values)
       KAFKA_SSL_KEYSTORE_CREDENTIALS: keystore_creds
       KAFKA_SSL_KEY_CREDENTIALS: key_creds
