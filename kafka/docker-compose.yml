@@ -5,7 +5,6 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      KAFKA_HEAP_OPTS: "-Xmx256M -Xms128M" # Limiting Zookeeper's heap size
     ports:
       - "2181:2181"
     volumes:
@@ -23,8 +22,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,SASL_SSL://kafka:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,SASL_SSL://kafka:9093
       KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
       KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
@@ -35,7 +34,6 @@ services:
       KAFKA_SSL_TRUSTSTORE_CREDENTIALS: truststore_creds
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-      KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M" # Limiting Kafka's heap size
     volumes:
       - /mnt/drive1/config/kafka:/etc/kafka
     labels:
