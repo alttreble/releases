@@ -8,6 +8,8 @@ services:
       KAFKA_HEAP_OPTS: "-Xmx256M -Xms128M" # Limiting Zookeeper's heap size
     ports:
       - "2181:2181"
+    volumes:
+      - /mnt/drive1/config/zookeeper:/etc/kafka
     networks:
       default:
 
