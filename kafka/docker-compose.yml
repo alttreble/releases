@@ -22,8 +22,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
       KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
-      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.jks
-      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.jks
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.client.truststore.jks
       KAFKA_SSL_CLIENT_AUTH: required
       # Define credentials (replace with your values)
       KAFKA_SSL_KEYSTORE_CREDENTIALS: keystore_creds
