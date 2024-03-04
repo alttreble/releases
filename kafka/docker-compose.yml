@@ -52,24 +52,24 @@ services:
       kafka-network:
       proxy:
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    ports:
-      - "9095:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.kafkaui.rule=Host(`kafka-ui.treble.bg`)"
-      - "traefik.http.routers.kafkaui.entrypoints=websecure"
-      - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
-      - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
-    networks:
-      default:
-      proxy:
+  # kafka-ui:
+  #   image: provectuslabs/kafka-ui:latest
+  #   ports:
+  #     - "9095:8080"
+  #   environment:
+  #     KAFKA_CLUSTERS_0_NAME: local
+  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+  #     KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.docker.network=proxy"
+  #     - "traefik.http.routers.kafkaui.rule=Host(`kafka-ui.treble.bg`)"
+  #     - "traefik.http.routers.kafkaui.entrypoints=websecure"
+  #     - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
+  #     - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
+  #   networks:
+  #     default:
+  #     proxy:
 
 networks:
   proxy:
@@ -80,4 +80,3 @@ networks:
 
 volumes:
   postgres_data:
-
