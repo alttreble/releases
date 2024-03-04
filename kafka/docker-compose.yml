@@ -52,43 +52,26 @@ services:
       kafka-network:
       proxy:
 
-  # kafka-ui:
-  #   image: provectuslabs/kafka-ui:latest
-  #   ports:
-  #     - "9095:9095"
-  #   environment:
-  #     - KAFKA_CLUSTERS_0_NAME=local
-  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-  #     - KAFKA_CLUSTERS_0_ZOOKEEPER-zookeeper:2181
-  #     - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=SASL_PLAINTEXT
-  #     - KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM=PLAIN
-  #     - KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG='Login module control flag not specified in JAAS config'
-  #     - SERVER_PORT=9095
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.docker.network=proxy"
-  #     - "traefik.http.routers.kafka-ui.rule=Host(`kafka-ui.treble.bg`)"
-  #     - "traefik.http.routers.kafka-ui.entrypoints=websecure"
-  #     - "traefik.http.services.kafka-ui.loadbalancer.server.port=9095"
-  #     - "traefik.http.routers.kafka-ui.tls.certresolver=tlsresolver"
-  #   networks:
-  #     kafka-network:
-  #     proxy:
-  #
   kafka-ui:
-    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8080:8080
+    depends_on:
+      - kafka
     environment:
-      - KAFKA_BROKERS=kafka:9092
-      - KAFKA_SASL_ENABLED=true
-      - KAFKA_SASL_USERNAME=admin
-      - KAFKA_SASL_PASSWORD=admin-secret
-
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+      DYNAMIC_CONFIG_ENABLED: true # not necessary for sasl auth, added for tests
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.kafka-ui.rule=Host(`kafka-ui.treble.bg`)"
       - "traefik.http.routers.kafka-ui.entrypoints=websecure"
-      - "traefik.http.services.kafka-ui.loadbalancer.server.port=8080"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=9095"
       - "traefik.http.routers.kafka-ui.tls.certresolver=tlsresolver"
     networks:
       kafka-network:
