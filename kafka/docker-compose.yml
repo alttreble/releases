@@ -5,12 +5,11 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/zoo_jaas.conf"
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/zoo_jaas.conf -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider -Dzookeeper.requireClientAuthScheme=sasl"
     ports:
       - "2181:2181"
     volumes:
       - /mnt/drive1/config/zookeeper:/etc/kafka
-      - /mnt/drive1/config/zookeeper/zoo.cfg:/etc/kafka/zoo.cfg
 
     networks:
       kafka-network:
