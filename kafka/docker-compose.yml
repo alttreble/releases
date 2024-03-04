@@ -71,7 +71,7 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.kafka-ui.rule=Host(`kafka-ui.treble.bg`)"
       - "traefik.http.routers.kafka-ui.entrypoints=websecure"
-      - "traefik.http.services.kafka-ui.loadbalancer.server.port=9095"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=8080"
       - "traefik.http.routers.kafka-ui.tls.certresolver=tlsresolver"
     networks:
       kafka-network:
