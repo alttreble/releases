@@ -37,6 +37,7 @@ services:
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
     volumes:
       - /mnt/drive1/config/kafka:/etc/kafka
+      - /mnt/drive1/config/kafka/secrets:/etc/kafka/secrets
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
