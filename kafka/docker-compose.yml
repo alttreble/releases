@@ -35,7 +35,6 @@ services:
       KAFKA_SSL_TRUSTSTORE_CREDENTIALS: truststore_creds
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=DEBUG"
     volumes:
       - /mnt/drive1/config/kafka:/etc/kafka
     labels:
