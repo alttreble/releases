@@ -10,6 +10,8 @@ services:
       - "2181:2181"
     volumes:
       - /mnt/drive1/config/zookeeper:/etc/kafka
+      - /mnt/drive1/config/zookeeper/zoo.cfg:/etc/kafka/zoo.cfg
+
     networks:
       kafka-network:
 
@@ -35,7 +37,7 @@ services:
       KAFKA_SSL_TRUSTSTORE_CREDENTIALS: truststore_creds
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-      KAFKA_ZOOKEEPER_SET_ACL: "true"
+      KAFKA_ZOOKEEPER_SET_ACL: true
     volumes:
       - /mnt/drive1/config/kafka:/etc/kafka
       - /mnt/drive1/config/kafka/secrets:/etc/kafka/secrets
