@@ -66,10 +66,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.kafkaui.rule=Host(`kafka-ui.treble.bg`)"
-      - "traefik.http.routers.kafkaui.entrypoints=websecure"
-      - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
-      - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.kafka-ui.rule=Host(`kafka-ui.treble.bg`)"
+      - "traefik.http.routers.kafka-ui.entrypoints=websecure"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=9095"
+      - "traefik.http.routers.kafka-ui.tls.certresolver=tlsresolver"
     networks:
       kafka-network:
       proxy:
