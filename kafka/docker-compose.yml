@@ -11,7 +11,7 @@ services:
     volumes:
       - /mnt/drive1/config/zookeeper:/etc/kafka
     networks:
-      default:
+      kafka-network:
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -47,7 +47,7 @@ services:
       - "traefik.tcp.routers.kafka.service=kafka"
       - "traefik.tcp.routers.kafka.tls.certresolver=tlsresolver"
     networks:
-      default:
+      kafka-network:
       proxy:
 
   kafka-ui:
@@ -73,6 +73,8 @@ networks:
   proxy:
     name: "proxy"
     external: true
+  kafka-network:
+    driver: bridge
 
 volumes:
   postgres_data:
