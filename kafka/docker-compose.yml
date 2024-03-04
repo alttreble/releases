@@ -43,7 +43,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.tcp.routers.kafka.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.kafka.rule=HostSNI(`kafka.treble.bg`)"
       - "traefik.tcp.routers.kafka.entrypoints=kafka"
       - "traefik.tcp.services.kafka.loadbalancer.server.port=9093"
       - "traefik.tcp.routers.kafka.service=kafka"
