@@ -52,24 +52,27 @@ services:
       kafka-network:
       proxy:
 
-  # kafka-ui:
-  #   image: provectuslabs/kafka-ui:latest
-  #   ports:
-  #     - "9095:8080"
-  #   environment:
-  #     KAFKA_CLUSTERS_0_NAME: local
-  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-  #     KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.docker.network=proxy"
-  #     - "traefik.http.routers.kafkaui.rule=Host(`kafka-ui.treble.bg`)"
-  #     - "traefik.http.routers.kafkaui.entrypoints=websecure"
-  #     - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
-  #     - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
-  #   networks:
-  #     default:
-  #     proxy:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "9095:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.kafkaui.rule=Host(`kafka-ui.treble.bg`)"
+      - "traefik.http.routers.kafkaui.entrypoints=websecure"
+      - "traefik.http.services.kafkaui.loadbalancer.server.port=9095"
+      - "traefik.http.routers.kafkaui.tls.certresolver=tlsresolver"
+    networks:
+      kafka-network:
+      proxy:
 
 networks:
   proxy:
