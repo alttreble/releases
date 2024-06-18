@@ -42,10 +42,12 @@ services:
       - traefik.http.services.traefik.loadbalancer.server.port=8080
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.tls.certresolver=tlsresolver
-      # - traefik.http.routers.localhost-3000.rule=Host(`localhost-3000.treble.bg`)
-      # - traefik.http.routers.localhost-3000.entrypoints=websecure
-      # - traefik.http.routers.localhost-3000.tls.certresolver=tlsresolver
-      # - traefik.http.services.localhost-3000.loadbalancer.sever.port=3000
+
+      # Configuration for localhost:3000
+      - traefik.http.routers.localhost3000.rule=Host(`localhost3000.treble.bg`)
+      - traefik.http.routers.localhost3000.entrypoints=websecure
+      - traefik.http.routers.localhost3000.tls.certresolver=tlsresolver
+      - traefik.http.services.localhost3000.loadbalancer.server.url=http://host.docker.internal:3000
     ports:
       - "80:80"
       - "443:443"
