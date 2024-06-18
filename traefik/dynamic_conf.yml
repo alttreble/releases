@@ -1,0 +1,13 @@
+http:
+  routers:
+    localhost3000:
+      rule: "Host(`localhost3000.treble.bg`)"
+      service: localhost3000
+      entryPoints:
+        - web
+
+  services:
+    localhost3000:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3000"

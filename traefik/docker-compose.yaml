@@ -31,6 +31,7 @@ services:
       - --accesslog.bufferingsize=100
 
       - --providers.docker.exposedbydefault=false
+      - --providers.file.filename=/etc/traefik/dynamic_conf.yml
       - --certificatesresolvers.tlsresolver.acme.tlschallenge=true
       # - --certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
       - --certificatesresolvers.tlsresolver.acme.email=business@treble.bg
@@ -46,8 +47,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - "./dynamic_conf.yml:/dynamic_conf.yml"
       - "./letsencrypt:/letsencrypt"
+      - "./dynamic_conf.yml:/etc/traefik/dynamic_conf.yml"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     logging: *loki-logging
 
