@@ -42,16 +42,11 @@ services:
       - traefik.http.services.traefik.loadbalancer.server.port=8080
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.tls.certresolver=tlsresolver
-
-      # Configuration for localhost:3000
-      - traefik.http.routers.localhost3000.rule=Host(`localhost3000.treble.bg`)
-      - traefik.http.routers.localhost3000.entrypoints=websecure
-      - traefik.http.routers.localhost3000.tls.certresolver=tlsresolver
-      - traefik.http.services.localhost3000.loadbalancer.server.url=http://host.docker.internal:3000
     ports:
       - "80:80"
       - "443:443"
     volumes:
+      - "./dynamic_conf.yml:/dynamic_conf.yml"
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     logging: *loki-logging
