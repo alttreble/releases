@@ -14,7 +14,7 @@ services:
     expose:
       - 5432
     volumes:
-      - /mnt/drive1/config/prefect/db:/var/lib/postgresql/data
+      - /mnt/drive1/config/prefect3/db:/var/lib/postgresql/data
     networks:
       default:
 
@@ -22,7 +22,7 @@ services:
     image: prefecthq/prefect:3.0.0rc13-python3.12
     restart: always
     volumes:
-      - /mnt/drive1/config/prefect:/root/.prefect
+      - /mnt/drive1/config/prefect3:/root/.prefect
     entrypoint: ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
     environment:
       - PREFECT_UI_URL=https://prefect.treble.bg/api
