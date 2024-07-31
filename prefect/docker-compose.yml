@@ -1,14 +1,11 @@
-version: "3.9"
-
 networks:
   proxy:
     name: "proxy"
     external: true
 
 services:
-  ### Prefect Database
-  database:
-    image: postgres:15.2-alpine
+  postgres:
+    image: postgres:16
     restart: always
     environment:
       - POSTGRES_USER=postgres
@@ -16,23 +13,13 @@ services:
       - POSTGRES_DB=prefect
     expose:
       - 5432
-    volumes: 
+    volumes:
       - /mnt/drive1/config/prefect/db:/var/lib/postgresql/data
     networks:
       default:
-  
-  ### MinIO for flow storage
-  minio:
-    image: minio/minio:latest
-    entrypoint: ["minio", "server", "--address", "0.0.0.0:9000", "--console-address", "0.0.0.0:9001", "/data"]
-    volumes:
-      - "/mnt/drive1/config/minio:/data"
-    networks:
-      default:
 
-  ### Prefect Server API and UI
-  server:
-    image: prefecthq/prefect:2.16-python3.12-conda
+  prefect:
+    image: prefecthq/prefect:3.0.0rc13-python3.12
     restart: always
     volumes:
       - /mnt/drive1/config/prefect:/root/.prefect
@@ -41,11 +28,9 @@ services:
       - PREFECT_UI_URL=https://prefect.treble.bg/api
       - PREFECT_API_URL=https://prefect.treble.bg/api
       - PREFECT_SERVER_API_HOST=0.0.0.0
-      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@database:5432/prefect
-      # Uncomment the following line if you want to use the 'S3 Bucket' storage block instead of the older 'S3' storage
-      # - EXTRA_PIP_PACKAGES=prefect-aws
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/prefect
     depends_on:
-      - database
+      - postgres
     networks:
       default:
       proxy:
@@ -57,31 +42,6 @@ services:
       - "traefik.http.routers.prefect.tls.certresolver=tlsresolver"
       - "traefik.http.services.prefect.loadbalancer.server.port=4200"
 
-  ## Prefect Agent
-  agent:
-    image: prefecthq/prefect:2.16-python3.12-conda
-    restart: always
-    entrypoint: ["/opt/prefect/entrypoint.sh", "prefect", "agent", "start", "-q", "YOUR_WORK_QUEUE_NAME"]
-    environment:
-      - PREFECT_API_URL=http://server:4200/api
-#       Use PREFECT_API_KEY if connecting the agent to Prefect Cloud
-#     - PREFECT_API_KEY=YOUR_API_KEY
-    networks:
-      default:
-
-  ### Prefect CLI
-  cli:
-    image: prefecthq/prefect:2.16-python3.12-conda
-    entrypoint: "bash"
-    working_dir: "/root/flows"
-    volumes:
-      - "/mnt/drive1/config/prefect/flows:/root/flows"
-    environment:
-      - PREFECT_API_URL=http://server:4200/api
-#       Use PREFECT_API_KEY to use the CLI to interact with Prefect Cloud
-#     - PREFECT_API_KEY=YOUR_API_KEY
-      
 volumes:
   prefect:
   db:
-  minio:
