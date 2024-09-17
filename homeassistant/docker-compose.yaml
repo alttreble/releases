@@ -63,7 +63,7 @@ services:
 
   mariadb:
     image: mariadb:latest
-    container_name: shinobi-mariadb
+    container_name: mariadb
     environment:
       MYSQL_ROOT_PASSWORD: your_root_password
       MYSQL_DATABASE: ccio
