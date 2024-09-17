@@ -67,7 +67,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: your_root_password
       MYSQL_DATABASE: ccio
-      MYSQL_USER: shinobi
+      MYSQL_USER: majesticflame
       MYSQL_PASSWORD: your_shinobi_password
     volumes:
       - /mnt/drive1/data/shinobi/db:/var/lib/mysql
@@ -78,7 +78,7 @@ services:
     environment:
       MYSQL_HOST: shinobi-sql
       MYSQL_DATABASE: ccio
-      MYSQL_USER: shinobi
+      MYSQL_USER: majesticflame
       MYSQL_PASSWORD: your_shinobi_password
       MYSQL_ROOT_PASSWORD: your_root_password
       PLUGINS: "motion"
