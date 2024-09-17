@@ -61,9 +61,9 @@ services:
       environment:
           - TZ=Europe/Sofia
 
-  mariadb:
-    image: mariadb:latest
-    container_name: mariadb
+  shinobi-sql:
+    image: mysql:5.7
+    container_name: shinobi-sql
     environment:
       MYSQL_ROOT_PASSWORD: your_root_password
       MYSQL_DATABASE: ccio
@@ -76,7 +76,7 @@ services:
     image: shinobisystems/shinobi:latest
     container_name: shinobi
     environment:
-      MYSQL_HOST: mariadb
+      MYSQL_HOST: shinobi-sql
       MYSQL_DATABASE: ccio
       MYSQL_USER: shinobi
       MYSQL_PASSWORD: your_shinobi_password
@@ -86,6 +86,6 @@ services:
       - "8086:8080" # Shinobi Web UI
       - "8082:8082" # WebSocket
     depends_on:
-      - mariadb
+      - shinobi-sql
     volumes:
       - /mnt/drive1/data/shinobi/config:/config
