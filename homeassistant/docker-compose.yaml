@@ -54,7 +54,7 @@ services:
       restart: unless-stopped
       image: koenkk/zigbee2mqtt
       volumes:
-          - /mnt/drive/data/zigbee2mqtt:/app/data
+          - /mnt/drive1/data/zigbee2mqtt:/app/data
           - /run/udev:/run/udev:ro
       ports:
           - 8087:8080
