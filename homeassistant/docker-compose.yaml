@@ -47,4 +47,4 @@ services:
       - "3218:3218/tcp"
     volumes:
       - "/mnt/drive1/config/hass-configurator:/config"
-      - "/mnt/drive1/config/hass:/hass-config"
+      - "/mnt/drive1/config/hass:/hass"
