@@ -38,10 +38,10 @@ services:
       - --certificatesresolvers.tlsresolver.acme.email=business@treble.bg
       - --certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json
       # Databyte certificates resolver
-      - --certificatesresolvers.databyteresolver.acme.tlschallenge=true
-      # - --certificatesresolvers.databyteresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-      - --certificatesresolvers.databyteresolver.acme.email=engineering@databyte.so
-      - --certificatesresolvers.databyteresolver.acme.storage=/letsencrypt/databyte-acme.json
+      # - --certificatesresolvers.databyteresolver.acme.tlschallenge=true
+      # # - --certificatesresolvers.databyteresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      # - --certificatesresolvers.databyteresolver.acme.email=engineering@databyte.so
+      # - --certificatesresolvers.databyteresolver.acme.storage=/letsencrypt/databyte-acme.json
 
     labels:
       - traefik.enable=true
