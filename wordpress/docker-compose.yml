@@ -21,9 +21,14 @@ services:
     volumes:
       - wp_data:/var/www/html
       - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
-    ports:
-      - 7373:80
     restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.wordpress.rule=Host(`wordpress.treble.bg`)"
+      - "traefik.http.routers.wordpress.entrypoints=websecure"
+      - "traefik.http.routers.wordpress.tls.certresolver=tlsresolver"
+      - "traefik.http.services.wordpress.loadbalancer.server.port=80"
     environment:
       - WORDPRESS_DB_HOST=db
       - WORDPRESS_DB_USER=admin
