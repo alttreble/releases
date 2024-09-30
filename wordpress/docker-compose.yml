@@ -16,19 +16,6 @@ services:
     networks:
       - proxy
 
-  mariadb-admin:
-    image: adminer:latest
-    restart: always
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.mariadb-admin.rule=Host(`mariadb-admin.treble.bg`)"
-      - "traefik.http.routers.mariadb-admin.entrypoints=websecure"
-      - "traefik.http.routers.mariadb-admin.tls.certresolver=tlsresolver"
-      - "traefik.http.services.mariadb-admin.loadbalancer.server.port=8080"
-    networks:
-      - proxy
-
   wordpress:
     image: wordpress:latest
     volumes:
