@@ -1,0 +1,25 @@
+services:
+  zrok:
+    image: openziti/zrok
+    container_name: zrok
+    restart: always
+    environment:
+      - ZROK_DNS_ZONE=zrok.treble.bg
+      - ZROK_USER_EMAIL=business@treble.bg
+      - ZROK_USER_PWD=zrokuserpw
+      - ZITI_PWD=zitiadminpw
+      - ZROK_ADMIN_TOKEN=zroktoken
+    labels:
+      - "traefik.enable=false"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.zrok.rule=Host(`zrok.treble.bg`)"
+      - "traefik.http.routers.zrok.entrypoints=websecure"
+      - "traefik.http.routers.zrok.tls.certresolver=tlsresolver"
+      - "traefik.http.services.zrok.loadbalancer.server.port=80"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
