@@ -1,9 +1,9 @@
-version: '3.8'
-
 services:
   zrok:
     image: openziti/zrok
     restart: always
+    deploy:
+      replicas: 1
     environment:
       - ZROK_DNS_ZONE=zrok.treble.bg
       - ZROK_USER_EMAIL=business@treble.bg
