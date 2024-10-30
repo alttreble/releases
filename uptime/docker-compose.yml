@@ -8,10 +8,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.c4.rule=Host(`uptime.treble.bg`)"
-      - "traefik.http.routers.c4.entrypoints=websecure"
-      - "traefik.http.routers.c4.tls.certresolver=tlsresolver"
-      - "traefik.http.services.c4.loadbalancer.server.port=3001"
+      - "traefik.http.routers.uptime.rule=Host(`uptime.treble.bg`)"
+      - "traefik.http.routers.uptime.entrypoints=websecure"
+      - "traefik.http.routers.uptime.tls.certresolver=tlsresolver"
+      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
     networks:
       default:
       proxy:
