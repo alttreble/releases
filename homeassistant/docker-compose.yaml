@@ -10,6 +10,16 @@ services:
     restart: unless-stopped
     privileged: true
     network_mode: host
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.homeassistant.rule=Host(`ha.treble.bg`)"
+      - "traefik.http.routers.homeassistant.entrypoints=websecure"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+      - "traefik.http.routers.homeassistant.tls.certresolver=tlsresolver"
 
   nodered:
     container_name: nodered
@@ -61,31 +71,7 @@ services:
       environment:
           - TZ=Europe/Sofia
 
-  shinobi-sql:
-    image: mysql:5.7
-    container_name: shinobi-sql
-    environment:
-      MYSQL_ROOT_PASSWORD: your_root_password
-      MYSQL_DATABASE: ccio
-      MYSQL_USER: majesticflame
-      MYSQL_PASSWORD: your_shinobi_password
-    volumes:
-      - /mnt/drive1/data/shinobi/db:/var/lib/mysql
-
-  shinobi:
-    image: shinobisystems/shinobi:latest
-    container_name: shinobi
-    environment:
-      MYSQL_HOST: shinobi-sql
-      MYSQL_DATABASE: ccio
-      MYSQL_USER: majesticflame
-      MYSQL_PASSWORD: your_shinobi_password
-      MYSQL_ROOT_PASSWORD: your_root_password
-      PLUGINS: "motion"
-    ports:
-      - "8086:8080" # Shinobi Web UI
-      - "8082:8082" # WebSocket
-    depends_on:
-      - shinobi-sql
-    volumes:
-      - /mnt/drive1/data/shinobi/config:/config
+networks:
+  proxy:
+    name: "proxy"
+    external: true
