@@ -9,6 +9,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     privileged: true
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0  # Adjust to match your USB device path
     networks:
       - default
       - proxy
