@@ -61,16 +61,18 @@ services:
       - "/mnt/drive1/config/hass:/hass"
 
   zigbee2mqtt:
-      container_name: zigbee2mqtt
-      restart: unless-stopped
-      image: koenkk/zigbee2mqtt
-      volumes:
-          - /mnt/drive1/data/zigbee2mqtt:/app/data
-          - /run/udev:/run/udev:ro
-      ports:
-          - 8087:8080
-      environment:
-          - TZ=Europe/Sofia
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    image: koenkk/zigbee2mqtt
+    volumes:
+      - /mnt/drive1/data/zigbee2mqtt:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0  # Adjust to match your USB device path
+    ports:
+      - 8087:8080
+    environment:
+      - TZ=Europe/Sofia
 
 networks:
   proxy:
