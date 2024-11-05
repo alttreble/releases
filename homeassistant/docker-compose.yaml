@@ -25,8 +25,6 @@ services:
   nodered:
     container_name: nodered
     image: nodered/node-red
-    ports:
-      - 1880:1880
     volumes:
       - /mnt/drive1/data/nodered:/data
     depends_on:
@@ -35,14 +33,21 @@ services:
     environment:
       - TZ=Europe/Sofia
     restart: unless-stopped
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.nodered.rule=Host(`nodered.treble.bg`)"
+      - "traefik.http.routers.nodered.entrypoints=websecure"
+      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+      - "traefik.http.routers.nodered.tls.certresolver=tlsresolver"
 
   mosquitto:
     image: eclipse-mosquitto
     container_name: mosquitto
     restart: unless-stopped
-    ports:
-      - 1883:1883
-      - 9001:9001
     volumes:
       - "/mnt/drive1/config/mosquitto:/mosquitto/config"
       - "/mnt/drive1/data/mosquitto:/mosquitto/data"
@@ -54,11 +59,19 @@ services:
   hass-configurator:
     image: "causticlab/hass-configurator-docker:latest"
     restart: always
-    ports:
-      - "3218:3218/tcp"
     volumes:
       - "/mnt/drive1/config/hass-configurator:/config"
       - "/mnt/drive1/config/hass:/hass"
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.hass-configurator.rule=Host(`hass-configurator.treble.bg`)"
+      - "traefik.http.routers.hass-configurator.entrypoints=websecure"
+      - "traefik.http.services.hass-configurator.loadbalancer.server.port=3218"
+      - "traefik.http.routers.hass-configurator.tls.certresolver=tlsresolver"
 
   zigbee2mqtt:
     container_name: zigbee2mqtt
@@ -69,10 +82,18 @@ services:
       - /run/udev:/run/udev:ro
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0  # Adjust to match your USB device path
-    ports:
-      - 8087:8080
     environment:
       - TZ=Europe/Sofia
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.treble.bg`)"
+      - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
+      - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
+      - "traefik.http.routers.zigbee2mqtt.tls.certresolver=tlsresolver"
 
 networks:
   proxy:
