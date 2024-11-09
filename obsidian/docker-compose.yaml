@@ -2,7 +2,6 @@ services:
   couchdb:
     image: couchdb:latest
     container_name: obsidian-sync
-    user: 1000:1000
     environment:
       - COUCHDB_USER=${COUCHDB_USER}
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
