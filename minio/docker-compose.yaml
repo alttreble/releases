@@ -14,12 +14,18 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
+
+      # Router for MinIO API
       - "traefik.http.routers.minio.rule=Host(`minio.treble.bg`)"
       - "traefik.http.routers.minio.entrypoints=websecure"
-      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+      - "traefik.http.routers.minio.service=minio-api"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
       - "traefik.http.routers.minio.tls.certresolver=tlsresolver"
+
+      # Router for MinIO Console
       - "traefik.http.routers.minio-console.rule=Host(`minio-console.treble.bg`)"
       - "traefik.http.routers.minio-console.entrypoints=websecure"
+      - "traefik.http.routers.minio-console.service=minio-console"
       - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
       - "traefik.http.routers.minio-console.tls.certresolver=tlsresolver"
 
