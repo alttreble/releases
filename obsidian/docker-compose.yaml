@@ -7,7 +7,7 @@ services:
       - COUCHDB_USER=${COUCHDB_USER}
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
     volumes:
-      - /mnt/drive1/obsidian-sync/data:/opt/couchdb/data
+      - /mnt/drive1/data/obsidian-sync:/opt/couchdb/data
     # Ports not needed when already passed to Traefik
     #ports:
     #  - 5984:5984
