@@ -1,15 +1,13 @@
 services:
-  couchdb:
-    image: couchdb:latest
-    container_name: obsidian-sync
+  minio:
+    image: minio/minio:latest
+    container_name: obsidian-minio
     environment:
-      - COUCHDB_USER=${COUCHDB_USER}
-      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
-      - /mnt/drive1/data/obsidian-sync:/opt/couchdb/data
-    # Ports not needed when already passed to Traefik
-    #ports:
-    #  - 5984:5984
+      - /mnt/drive1/data/obsidian-sync:/data
+    command: server /data --console-address ":9001"
     restart: unless-stopped
     networks:
       - proxy
@@ -18,7 +16,7 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.obsidian-sync.rule=Host(`obsidian-sync.treble.bg`)"
       - "traefik.http.routers.obsidian-sync.entrypoints=websecure"
-      - "traefik.http.services.obsidian-sync.loadbalancer.server.port=5984"
+      - "traefik.http.services.obsidian-sync.loadbalancer.server.port=9000"
       - "traefik.http.routers.obsidian-sync.tls.certresolver=tlsresolver"
 
 networks:
