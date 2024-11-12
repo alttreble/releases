@@ -15,7 +15,7 @@ services:
       - REDIS_HOSTNAME
       - TYPESENSE_API_KEY
     ports:
-      - 2283:3001
+      - 2283:2283
     depends_on:
       - redis
       - database
@@ -25,7 +25,7 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.immich.rule=Host(`photos.treble.bg`)"
       - "traefik.http.routers.immich.entrypoints=websecure"
-      - "traefik.http.services.immich.loadbalancer.server.port=3001"
+      - "traefik.http.services.immich.loadbalancer.server.port=2283"
       - "traefik.http.routers.immich.tls.certresolver=tlsresolver"
     networks:
       default:
