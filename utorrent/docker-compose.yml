@@ -2,7 +2,7 @@ name: utorrent
 
 services:
   utorrent:
-    image: ekho/utorrent:<tag>
+    image: ekho/utorrent:latest
     volumes:
       - /mnt/drive1/config/utorrent:/utorrent/settings
       - /mnt/drive1/data/utorrent:/data
