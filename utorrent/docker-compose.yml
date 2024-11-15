@@ -1,0 +1,25 @@
+name: utorrent
+
+services:
+  utorrent:
+    image: ekho/utorrent:<tag>
+    volumes:
+      - /mnt/drive1/config/utorrent:/utorrent/settings
+      - /mnt/drive1/data/utorrent:/data
+    environment:
+      UID: 1000
+      GID: 1000
+      dir_autoload_delete: true
+    ports:
+      - 8080:8080
+      - 6881:6881
+      - 6881:6881/udp
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  utorrent-settings:
