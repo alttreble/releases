@@ -16,9 +16,6 @@ services:
       - WEBHOOK_URL=https://n8n.treble.bg/
     volumes:
       - n8n_storage:/home/node/.n8n
-    depends_on:
-      postgres:
-        condition: service_healthy
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
