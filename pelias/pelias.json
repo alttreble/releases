@@ -1,0 +1,50 @@
+{
+  "logger": {
+    "level": "info",
+    "timestamp": false
+  },
+  "esclient": {
+    "apiVersion": "7.5",
+    "hosts": [
+      {
+        "host": "elasticsearch"
+      }
+    ]
+  },
+  "elasticsearch": {
+    "settings": {
+      "index": {
+        "refresh_interval": "10s",
+        "number_of_replicas": "0",
+        "number_of_shards": "4"
+      }
+    }
+  },
+  "api": {},
+  "imports": {
+    "adminLookup": {
+      "enabled": true
+    },
+    "openstreetmap": {
+      "download": [
+        {
+          "sourceURL": "https://download.geofabrik.de/north-america/us/washington-latest.osm.pbf"
+        }
+      ],
+      "leveldbpath": "/tmp",
+      "datapath": "/data/openstreetmap",
+      "import": [
+        {
+          "filename": "washington-latest.osm.pbf"
+        }
+      ]
+    },
+    "whosonfirst": {
+      "datapath": "/data/whosonfirst",
+      "importPostalcodes": true,
+      "usePostalCities": true,
+      "countryCode": ["US"],
+      "importPlace": "85633793"
+    },
+  }
+}
