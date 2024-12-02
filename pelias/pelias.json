@@ -4,7 +4,7 @@
     "timestamp": false
   },
   "esclient": {
-    "apiVersion": "7.5",
+    "apiVersion": "7.16",
     "hosts": [
       {
         "host": "elasticsearch"
