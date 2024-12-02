@@ -4,11 +4,13 @@ networks:
 services:
   schema:
     image: pelias/schema:master
+    user: "${DOCKER_USER}"
     container_name: pelias_schema
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
   api:
     image: pelias/api:master
+    user: "${DOCKER_USER}"
     container_name: pelias_api
     restart: always
     environment: [ "PORT=4000" ]
@@ -17,24 +19,28 @@ services:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
   whosonfirst:
     image: pelias/whosonfirst:master
+    user: "${DOCKER_USER}"
     container_name: pelias_whosonfirst
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
       - "${DATA_DIR}:/data"
   openstreetmap:
     image: pelias/openstreetmap:master
+    user: "${DOCKER_USER}"
     container_name: pelias_openstreetmap
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
       - "${DATA_DIR}:/data"
   openaddresses:
     image: pelias/openaddresses:master
+    user: "${DOCKER_USER}"
     container_name: pelias_openaddresses
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
       - "${DATA_DIR}:/data"
   pip:
     image: pelias/pip-service:master
+    user: "${DOCKER_USER}"
     container_name: pelias_pip-service
     restart: always
     environment: [ "PORT=4200" ]
@@ -43,6 +49,7 @@ services:
       - "${DATA_DIR}:/data"
   elasticsearch:
     image: pelias/elasticsearch:7.16.1
+    user: "${DOCKER_USER}"
     container_name: pelias_elasticsearch
     restart: always
     environment: [ "ES_JAVA_OPTS=-Xmx8g" ]
