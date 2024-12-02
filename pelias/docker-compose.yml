@@ -1,4 +1,3 @@
-version: '3'
 networks:
   default:
     driver: bridge
@@ -6,41 +5,47 @@ services:
   schema:
     image: pelias/schema:master
     container_name: pelias_schema
-    user: "${DOCKER_USER}"
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
   api:
     image: pelias/api:master
     container_name: pelias_api
-    user: "${DOCKER_USER}"
     restart: always
     environment: [ "PORT=4000" ]
     ports: [ "0.0.0.0:4000:4000" ]
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
-  openstreetmap:
-    image: pelias/openstreetmap:master
-    container_name: pelias_openstreetmap
-    user: "${DOCKER_USER}"
-    volumes:
-      - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
-      - "${DATA_DIR}:/data"
   whosonfirst:
     image: pelias/whosonfirst:master
     container_name: pelias_whosonfirst
-    user: "${DOCKER_USER}"
+    volumes:
+      - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
+      - "${DATA_DIR}:/data"
+  openstreetmap:
+    image: pelias/openstreetmap:master
+    container_name: pelias_openstreetmap
+    volumes:
+      - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
+      - "${DATA_DIR}:/data"
+  openaddresses:
+    image: pelias/openaddresses:master
+    container_name: pelias_openaddresses
+    volumes:
+      - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
+      - "${DATA_DIR}:/data"
+  pip:
+    image: pelias/pip-service:master
+    container_name: pelias_pip-service
+    restart: always
+    environment: [ "PORT=4200" ]
     volumes:
       - "${CONFIG_DIR}/pelias.json:/code/pelias.json"
       - "${DATA_DIR}:/data"
   elasticsearch:
     image: pelias/elasticsearch:7.16.1
     container_name: pelias_elasticsearch
-    user: "${DOCKER_USER}"
     restart: always
     environment: [ "ES_JAVA_OPTS=-Xmx8g" ]
-    ports:
-      - 9200:9200
-      - 9300:9300
     volumes:
       - "${DATA_DIR}/elasticsearch:/usr/share/elasticsearch/data"
     ulimits:
