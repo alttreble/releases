@@ -9,6 +9,6 @@ services:
     environment:
       EULA: "TRUE"
       TYPE: FABRIC
-      VERSION: 1.21.4
+      VERSION: ${MINECRAFT_VERSION}
     volumes:
-      - /mnt/drive1/minecraft-server/data:/data
+      - /mnt/drive1/data/minecraft:/data
