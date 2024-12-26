@@ -9,6 +9,7 @@ services:
     environment:
       EULA: "TRUE"
       TYPE: FABRIC
+      ONLINE_MODE: "FALSE"
       VERSION: ${MINECRAFT_VERSION}
     volumes:
       - /mnt/drive1/data/minecraft:/data
