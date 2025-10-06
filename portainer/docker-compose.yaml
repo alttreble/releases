@@ -12,10 +12,11 @@ services:
       - 9000:9000
     networks:
       proxy:
+      default:
     labels:
       # Frontend
       - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.treble.bg`)"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.home.arpa`)"
       - "traefik.http.routers.portainer.entrypoints=websecure"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
       - "traefik.http.routers.portainer.service=portainer"
@@ -25,6 +26,6 @@ networks:
   proxy:
     name: "proxy"
     external: true
-        
+
 volumes:
   portainer_data:

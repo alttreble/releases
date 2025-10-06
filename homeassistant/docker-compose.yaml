@@ -19,7 +19,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.homeassistant.rule=Host(`ha.treble.bg`)"
+      - "traefik.http.routers.homeassistant.rule=Host(`ha.home.arpa`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
       - "traefik.http.routers.homeassistant.tls.certresolver=tlsresolver"
@@ -41,7 +41,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.nodered.rule=Host(`nodered.treble.bg`)"
+      - "traefik.http.routers.nodered.rule=Host(`nodered.home.arpa`)"
       - "traefik.http.routers.nodered.entrypoints=websecure"
       - "traefik.http.services.nodered.loadbalancer.server.port=1880"
       - "traefik.http.routers.nodered.tls.certresolver=tlsresolver"
@@ -70,7 +70,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.hass-configurator.rule=Host(`hass-configurator.treble.bg`)"
+      - "traefik.http.routers.hass-configurator.rule=Host(`hass-configurator.home.arpa`)"
       - "traefik.http.routers.hass-configurator.entrypoints=websecure"
       - "traefik.http.services.hass-configurator.loadbalancer.server.port=3218"
       - "traefik.http.routers.hass-configurator.tls.certresolver=tlsresolver"
@@ -92,7 +92,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.treble.bg`)"
+      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.home.arpa`)"
       - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
       - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
       - "traefik.http.routers.zigbee2mqtt.tls.certresolver=tlsresolver"
