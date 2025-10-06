@@ -21,9 +21,6 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --entrypoints.websecure.address=:443
-      - "--entrypoints.websecure.http.tls=true"
-      - "--entrypoints.websecure.http.tls.certificates.certFile=/certs/home.arpa.pem"
-      - "--entrypoints.websecure.http.tls.certificates.keyFile=/certs/home.arpa-key.pem"
       - --entrypoints.mongodb.address=:27017
       - --entrypoints.kafka.address=:9093
       - --metrics.prometheus=true
@@ -49,7 +46,7 @@ services:
 
     labels:
       - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.home.arpa`)
+      - traefik.http.routers.traefik.rule=Host(`traefik.tedraykov.me`)
       - traefik.http.services.traefik.loadbalancer.server.port=8080
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.tls.certresolver=tlsresolver
