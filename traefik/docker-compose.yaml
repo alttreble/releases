@@ -1,10 +1,5 @@
 version: "3.3"
 
-x-logging: &loki-logging
-  driver: json-file
-  options:
-    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
-
 services:
   traefik:
     image: "traefik:v2.10"
@@ -58,7 +53,6 @@ services:
       - "./dynamic_conf.yml:/etc/traefik/dynamic_conf.yml"
       - "/mnt/drive1/config/certs:/certs"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    logging: *loki-logging
 
 networks:
   proxy:

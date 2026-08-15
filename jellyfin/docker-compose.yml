@@ -1,0 +1,35 @@
+name: jellyfin
+
+services:
+  jellyfin:
+    container_name: jellyfin
+    image: jellyfin/jellyfin:latest
+    restart: unless-stopped
+    ports:
+      - 8096:8096/tcp
+      - 7359:7359/udp
+    environment:
+      - TZ=Europe/Sofia
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.tedraykov.me
+    hostname: JellyfinServer
+    volumes:
+      - /mnt/drive1/config/jellyfin:/config
+      - /mnt/drive1/data/jellyfin-cache:/cache
+      - /mnt/drive1/data/transcode:/transcode
+      - /mnt/drive1/data/plex:/data:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.tedraykov.me`)"
+      - "traefik.http.routers.jellyfin.entrypoints=websecure"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.http.routers.jellyfin.service=jellyfin"
+      - "traefik.http.routers.jellyfin.tls.certresolver=tlsresolver"
+    networks:
+      default:
+      proxy:
+
+networks:
+  proxy:
+    name: "proxy"
+    external: true
