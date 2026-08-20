@@ -8,9 +8,6 @@ services:
       - /mnt/drive1/config/hass:/config
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
-    privileged: true
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0  # Adjust to match your USB device path
     networks:
       - default
       - proxy
@@ -19,7 +16,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.homeassistant.rule=Host(`ha.home.arpa`)"
+      - "traefik.http.routers.homeassistant.rule=Host(`ha.tedraykov.me`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
       - "traefik.http.routers.homeassistant.tls.certresolver=tlsresolver"
@@ -41,7 +38,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.nodered.rule=Host(`nodered.home.arpa`)"
+      - "traefik.http.routers.nodered.rule=Host(`nodered.tedraykov.me`)"
       - "traefik.http.routers.nodered.entrypoints=websecure"
       - "traefik.http.services.nodered.loadbalancer.server.port=1880"
       - "traefik.http.routers.nodered.tls.certresolver=tlsresolver"
@@ -70,7 +67,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.hass-configurator.rule=Host(`hass-configurator.home.arpa`)"
+      - "traefik.http.routers.hass-configurator.rule=Host(`hass-configurator.tedraykov.me`)"
       - "traefik.http.routers.hass-configurator.entrypoints=websecure"
       - "traefik.http.services.hass-configurator.loadbalancer.server.port=3218"
       - "traefik.http.routers.hass-configurator.tls.certresolver=tlsresolver"
@@ -79,11 +76,13 @@ services:
     container_name: zigbee2mqtt
     restart: unless-stopped
     image: koenkk/zigbee2mqtt
+    depends_on:
+      - mosquitto
     volumes:
       - /mnt/drive1/data/zigbee2mqtt:/app/data
       - /run/udev:/run/udev:ro
     devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0  # Adjust to match your USB device path
+      - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_568ca15e4e1fef11a7fd56d0639e525b-if00-port0:/dev/ttyUSB0
     environment:
       - TZ=Europe/Sofia
     networks:
@@ -92,7 +91,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.home.arpa`)"
+      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.tedraykov.me`)"
       - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
       - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
       - "traefik.http.routers.zigbee2mqtt.tls.certresolver=tlsresolver"

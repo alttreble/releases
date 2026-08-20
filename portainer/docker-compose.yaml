@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:lts
     command: -H unix:///var/run/docker.sock
     restart: always
     volumes:
@@ -16,6 +16,7 @@ services:
     labels:
       # Frontend
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.portainer.rule=Host(`portainer.tedraykov.me`)"
       - "traefik.http.routers.portainer.entrypoints=websecure"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"

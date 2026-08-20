@@ -1,8 +1,11 @@
-version: "3.3"
+x-logging: &loki-logging
+  driver: json-file
+  options:
+    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 services:
   traefik:
-    image: "traefik:v2.10"
+    image: "traefik:v3.7"
     container_name: "traefik"
     restart: unless-stopped
     networks:
@@ -28,10 +31,10 @@ services:
       - --accesslog.bufferingsize=100
 
       - --providers.docker.exposedbydefault=false
-      - --providers.file.filename=/etc/traefik/dynamic_conf.yml
+      - --providers.docker.network=proxy
       - --certificatesresolvers.tlsresolver.acme.tlschallenge=true
       # - --certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-      - --certificatesresolvers.tlsresolver.acme.email=business@treble.bg
+      - --certificatesresolvers.tlsresolver.acme.email=business@tedraykov.me
       - --certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json
       # Databyte certificates resolver
       # - --certificatesresolvers.databyteresolver.acme.tlschallenge=true
@@ -49,10 +52,10 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - "./letsencrypt:/letsencrypt"
-      - "./dynamic_conf.yml:/etc/traefik/dynamic_conf.yml"
+      - "/mnt/drive1/config/letsencrypt:/letsencrypt"
       - "/mnt/drive1/config/certs:/certs"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    logging: *loki-logging
 
 networks:
   proxy:

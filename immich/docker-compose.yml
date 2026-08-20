@@ -23,7 +23,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.immich.rule=Host(`photos.treble.bg`)"
+      - "traefik.http.routers.immich.rule=Host(`photos.tedraykov.me`)"
       - "traefik.http.routers.immich.entrypoints=websecure"
       - "traefik.http.services.immich.loadbalancer.server.port=2283"
       - "traefik.http.routers.immich.tls.certresolver=tlsresolver"
