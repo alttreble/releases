@@ -11,12 +11,14 @@ services:
     environment:
       - TZ=Europe/Sofia
       - JELLYFIN_PublishedServerUrl=https://jellyfin.tedraykov.me
+      # NVENC/NVDEC on the passed-through RTX 3060. No /dev/dri needed.
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     hostname: JellyfinServer
     volumes:
-      - /mnt/drive1/config/jellyfin:/config
-      - /mnt/drive1/data/jellyfin-cache:/cache
-      - /mnt/drive1/data/transcode:/transcode
-      - /mnt/drive1/data/plex:/data:ro
+      - /opt/stacks/jellyfin/config:/config
+      - /opt/stacks/jellyfin/cache:/cache
+      - /opt/stacks/jellyfin/transcode:/transcode
+      - /srv/media:/data:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -24,7 +26,14 @@ services:
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
       - "traefik.http.routers.jellyfin.service=jellyfin"
-      - "traefik.http.routers.jellyfin.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.jellyfin.tls=true"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     networks:
       default:
       proxy:

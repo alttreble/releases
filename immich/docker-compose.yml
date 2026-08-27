@@ -1,11 +1,9 @@
-version: "3.8"
-
 services:
   immich-server:
     container_name: immich_server
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:?set IMMICH_VERSION in .env - never use :release}
     volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - /srv/immich:/usr/src/app/upload   # HDD mirror via virtiofs
       - /etc/localtime:/etc/localtime:ro
     environment:
       - DB_PASSWORD
@@ -26,16 +24,25 @@ services:
       - "traefik.http.routers.immich.rule=Host(`photos.tedraykov.me`)"
       - "traefik.http.routers.immich.entrypoints=websecure"
       - "traefik.http.services.immich.loadbalancer.server.port=2283"
-      - "traefik.http.routers.immich.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.immich.tls=true"
     networks:
       default:
       proxy:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:?set IMMICH_VERSION in .env - never use :release}
     volumes:
       - model-cache:/cache
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: always
 
   redis:

@@ -1,0 +1,11 @@
+# One wildcard for the whole zone, used as the default certificate.
+# Routers then need only `tls=true`.
+tls:
+  stores:
+    default:
+      defaultGeneratedCert:
+        resolver: cloudflare
+        domain:
+          main: "tedraykov.me"
+          sans:
+            - "*.tedraykov.me"

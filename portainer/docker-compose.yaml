@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   portainer:
     image: portainer/portainer-ce:lts
@@ -9,7 +7,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     ports:
-      - 9000:9000
+      # 9443 is published because the DMZ Traefik on VM 200 proxies to
+      # 192.168.1.100:9443 directly (see /etc/dokploy/traefik/dynamic/vm100.yml).
+      - 9443:9443
+      - 8000:8000
     networks:
       proxy:
       default:
@@ -19,9 +20,11 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.portainer.rule=Host(`portainer.tedraykov.me`)"
       - "traefik.http.routers.portainer.entrypoints=websecure"
+      # VM 100 Traefik reaches the container over the proxy network on plain
+      # HTTP (9000), avoiding TLS-in-TLS and an insecureSkipVerify transport.
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
       - "traefik.http.routers.portainer.service=portainer"
-      - "traefik.http.routers.portainer.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.portainer.tls=true"
 
 networks:
   proxy:

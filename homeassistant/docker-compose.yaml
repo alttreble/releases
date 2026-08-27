@@ -1,11 +1,10 @@
-version: '3'
 
 services:
   homeassistant:
     container_name: homeassistant
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
-      - /mnt/drive1/config/hass:/config
+      - /opt/stacks/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     networks:
@@ -19,13 +18,13 @@ services:
       - "traefik.http.routers.homeassistant.rule=Host(`ha.tedraykov.me`)"
       - "traefik.http.routers.homeassistant.entrypoints=websecure"
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
-      - "traefik.http.routers.homeassistant.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.homeassistant.tls=true"
 
   nodered:
     container_name: nodered
     image: nodered/node-red
     volumes:
-      - /mnt/drive1/data/nodered:/data
+      - /opt/stacks/homeassistant/nodered:/data
     depends_on:
       - homeassistant
       - mosquitto
@@ -41,16 +40,16 @@ services:
       - "traefik.http.routers.nodered.rule=Host(`nodered.tedraykov.me`)"
       - "traefik.http.routers.nodered.entrypoints=websecure"
       - "traefik.http.services.nodered.loadbalancer.server.port=1880"
-      - "traefik.http.routers.nodered.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.nodered.tls=true"
 
   mosquitto:
     image: eclipse-mosquitto
     container_name: mosquitto
     restart: unless-stopped
     volumes:
-      - "/mnt/drive1/config/mosquitto:/mosquitto/config"
-      - "/mnt/drive1/data/mosquitto:/mosquitto/data"
-      - "/mnt/drive1/log/mosquitto:/mosquitto/log"
+      - "/opt/stacks/homeassistant/mosquitto/config:/mosquitto/config"
+      - "/opt/stacks/homeassistant/mosquitto/data:/mosquitto/data"
+      - "/opt/stacks/homeassistant/mosquitto/log:/mosquitto/log"
     environment:
       - TZ=Europe/Sofia
     user: "${PUID}:${PGID}"
@@ -59,8 +58,8 @@ services:
     image: "causticlab/hass-configurator-docker:latest"
     restart: always
     volumes:
-      - "/mnt/drive1/config/hass-configurator:/config"
-      - "/mnt/drive1/config/hass:/hass"
+      - "/opt/stacks/homeassistant/hass-configurator:/config"
+      - "/opt/stacks/homeassistant/config:/hass"
     networks:
       - default
       - proxy
@@ -70,7 +69,7 @@ services:
       - "traefik.http.routers.hass-configurator.rule=Host(`hass-configurator.tedraykov.me`)"
       - "traefik.http.routers.hass-configurator.entrypoints=websecure"
       - "traefik.http.services.hass-configurator.loadbalancer.server.port=3218"
-      - "traefik.http.routers.hass-configurator.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.hass-configurator.tls=true"
 
   zigbee2mqtt:
     container_name: zigbee2mqtt
@@ -79,7 +78,7 @@ services:
     depends_on:
       - mosquitto
     volumes:
-      - /mnt/drive1/data/zigbee2mqtt:/app/data
+      - /opt/stacks/homeassistant/zigbee2mqtt:/app/data
       - /run/udev:/run/udev:ro
     devices:
       - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_568ca15e4e1fef11a7fd56d0639e525b-if00-port0:/dev/ttyUSB0
@@ -94,7 +93,7 @@ services:
       - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.tedraykov.me`)"
       - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
       - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
-      - "traefik.http.routers.zigbee2mqtt.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.zigbee2mqtt.tls=true"
 
 networks:
   proxy:

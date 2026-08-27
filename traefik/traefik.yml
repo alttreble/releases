@@ -1,0 +1,47 @@
+global:
+  sendAnonymousUsage: false
+log:
+  level: INFO
+
+api:
+  # Dashboard is enabled but deliberately NOT routed anywhere.
+  # sof1 ran --api.insecure=true with a public traefik.tedraykov.me router:
+  # an unauthenticated dashboard on the internet. Do not restore that.
+  dashboard: true
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+providers:
+  # Labels on containers joined to the external `proxy` network.
+  docker:
+    endpoint: "tcp://dockerproxy:2375"
+    exposedByDefault: false
+    network: proxy
+  # Kept alongside the docker provider so stacks can be migrated to labels
+  # one at a time. Delete homelab.yml once every stack carries labels.
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: business@tedraykov.me
+      storage: /letsencrypt/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        # Resolve against public DNS directly. The local resolver (AdGuard on
+        # 192.168.1.53) answers *.tedraykov.me with internal addresses, which
+        # would break ACME's propagation check.
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"

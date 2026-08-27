@@ -2,12 +2,12 @@ name: servarr
 
 # Automated media pipeline:
 #   Overseerr (request) -> Sonarr/Radarr (search via Prowlarr) -> qBittorrent (download)
-#   -> hardlink+rename into /data/media -> Plex picks it up.
+#   -> hardlink+rename into /data/media -> Jellyfin picks it up.
 #
-# All services share a single /mnt/drive1/data:/data mount so qBittorrent and the
+# All services share a single /srv/media:/data mount so qBittorrent and the
 # *arr apps can hardlink (instant moves, no double disk usage). Required layout:
-#   /mnt/drive1/data/torrents/{movies,tv}   <- qBittorrent saves here
-#   /mnt/drive1/data/media/{movies,tv}      <- *arr imports here, Plex reads here
+#   /srv/media/torrents/{movies,tv}   <- qBittorrent saves here
+#   /srv/media/media/{movies,tv}      <- *arr imports here, Jellyfin reads here
 
 x-common: &common
   restart: unless-stopped
@@ -25,12 +25,12 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     volumes:
-      - /mnt/drive1/config/prowlarr:/config
+      - /opt/stacks/servarr/prowlarr:/config
     labels:
       - traefik.enable=true
       - traefik.http.routers.prowlarr.rule=Host(`prowlarr.tedraykov.me`)
       - traefik.http.routers.prowlarr.entrypoints=websecure
-      - traefik.http.routers.prowlarr.tls.certresolver=tlsresolver
+      - traefik.http.routers.prowlarr.tls=true
       - traefik.http.services.prowlarr.loadbalancer.server.port=9696
 
   flaresolverr:
@@ -46,13 +46,13 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     volumes:
-      - /mnt/drive1/config/sonarr:/config
-      - /mnt/drive1/data/plex:/data
+      - /opt/stacks/servarr/sonarr:/config
+      - /srv/media:/data
     labels:
       - traefik.enable=true
       - traefik.http.routers.sonarr.rule=Host(`sonarr.tedraykov.me`)
       - traefik.http.routers.sonarr.entrypoints=websecure
-      - traefik.http.routers.sonarr.tls.certresolver=tlsresolver
+      - traefik.http.routers.sonarr.tls=true
       - traefik.http.services.sonarr.loadbalancer.server.port=8989
 
   radarr:
@@ -60,13 +60,13 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     volumes:
-      - /mnt/drive1/config/radarr:/config
-      - /mnt/drive1/data/plex:/data
+      - /opt/stacks/servarr/radarr:/config
+      - /srv/media:/data
     labels:
       - traefik.enable=true
       - traefik.http.routers.radarr.rule=Host(`radarr.tedraykov.me`)
       - traefik.http.routers.radarr.entrypoints=websecure
-      - traefik.http.routers.radarr.tls.certresolver=tlsresolver
+      - traefik.http.routers.radarr.tls=true
       - traefik.http.services.radarr.loadbalancer.server.port=7878
 
   qbittorrent:
@@ -77,8 +77,8 @@ services:
       <<: *common-env
       WEBUI_PORT: 8084
     volumes:
-      - /mnt/drive1/config/qbittorrent:/config
-      - /mnt/drive1/data/plex:/data
+      - /opt/stacks/servarr/qbittorrent:/config
+      - /srv/media:/data
     ports:
       - 6881:6881        # torrent TCP
       - 6881:6881/udp    # torrent UDP
@@ -86,7 +86,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.tedraykov.me`)
       - traefik.http.routers.qbittorrent.entrypoints=websecure
-      - traefik.http.routers.qbittorrent.tls.certresolver=tlsresolver
+      - traefik.http.routers.qbittorrent.tls=true
       - traefik.http.services.qbittorrent.loadbalancer.server.port=8084
 
   bazarr:
@@ -94,13 +94,13 @@ services:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     volumes:
-      - /mnt/drive1/config/bazarr:/config
-      - /mnt/drive1/data/plex:/data
+      - /opt/stacks/servarr/bazarr:/config
+      - /srv/media:/data
     labels:
       - traefik.enable=true
       - traefik.http.routers.bazarr.rule=Host(`bazarr.tedraykov.me`)
       - traefik.http.routers.bazarr.entrypoints=websecure
-      - traefik.http.routers.bazarr.tls.certresolver=tlsresolver
+      - traefik.http.routers.bazarr.tls=true
       - traefik.http.services.bazarr.loadbalancer.server.port=6767
 
   overseerr:
@@ -108,12 +108,12 @@ services:
     image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
     volumes:
-      - /mnt/drive1/config/overseerr:/config
+      - /opt/stacks/servarr/overseerr:/config
     labels:
       - traefik.enable=true
       - traefik.http.routers.overseerr.rule=Host(`overseerr.tedraykov.me`)
       - traefik.http.routers.overseerr.entrypoints=websecure
-      - traefik.http.routers.overseerr.tls.certresolver=tlsresolver
+      - traefik.http.routers.overseerr.tls=true
       - traefik.http.services.overseerr.loadbalancer.server.port=5055
 
 networks:

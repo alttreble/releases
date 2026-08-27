@@ -1,0 +1,73 @@
+x-logging: &loki-logging
+  driver: json-file
+  options:
+    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+x-app-env: &app-env
+  DATABASE_URL: ${DATABASE_URL}
+  DATABASE_AUTH_TOKEN: ${DATABASE_AUTH_TOKEN}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+  REDIS_URL: redis://redis:6379
+  NODE_ENV: production
+
+services:
+  redis:
+    image: redis:8-alpine
+    container_name: perfume-app-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    logging: *loki-logging
+
+  app:
+    image: ghcr.io/tedraykov/perfumes-app:latest
+    container_name: perfume-app
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+    networks:
+      - proxy
+      - default
+    depends_on:
+      redis:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - "traefik.docker.network=proxy"
+      - traefik.http.routers.perfume-app.rule=Host(`perfumes.tedraykov.me`)
+      - traefik.http.routers.perfume-app.entrypoints=websecure
+      - traefik.http.routers.perfume-app.tls.certresolver=tlsresolver
+      - traefik.http.services.perfume-app.loadbalancer.server.port=3000
+    logging: *loki-logging
+
+  worker:
+    image: ghcr.io/tedraykov/perfumes-app:latest
+    container_name: perfume-app-worker
+    restart: unless-stopped
+    command: ["node", "build/worker.js"]
+    environment:
+      <<: *app-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging: *loki-logging
+
+  flaresolverr:
+    image: flaresolverr/flaresolverr:v3.5.0
+    environment:
+      - LOG_LEVEL=info
+      - TZ=UTC
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+
+networks:
+  proxy:
+    external: true

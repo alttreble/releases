@@ -1,62 +1,56 @@
-x-logging: &loki-logging
-  driver: json-file
-  options:
-    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+# Traefik on VM 100 (trusted zone).
+#
+# Certificates: a single *.tedraykov.me wildcard issued via Cloudflare DNS-01.
+# It is set as the default cert in dynamic/tls.yml, so routers only need
+# `tls=true` - no per-router certresolver, no per-name issuance, and new
+# subdomains work the moment a label exists.
+#
+# The Cloudflare token can rewrite ANY record in the zone (including MX).
+# It lives on VM 100 only and must never be copied to VM 200 (DMZ).
 
 services:
-  traefik:
-    image: "traefik:v3.7"
-    container_name: "traefik"
+  # Read-only Docker API. Traefik never touches the socket directly - a
+  # compromised Traefik would otherwise be root on the VM holding the photo
+  # library and Home Assistant.
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: traefik-dockerproxy
     restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      SERVICES: 0
+      TASKS: 0
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      proxy:
       default:
-    command:
-      - --log.level=DEBUG
-      - --api.insecure=true
-      - --providers.docker=true
-      - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.websecure.address=:443
-      - --entrypoints.mongodb.address=:27017
-      - --entrypoints.kafka.address=:9093
-      - --metrics.prometheus=true
-      - --metrics.prometheus.entryPoint=metrics
-      - --entryPoints.metrics.address=:8082
-      - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
 
-      - --accesslog=true
-      - --accesslog.filepath=/traefik/logs/access.log
-      - --accesslog.bufferingsize=100
-
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=proxy
-      - --certificatesresolvers.tlsresolver.acme.tlschallenge=true
-      # - --certificatesresolvers.tlsresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-      - --certificatesresolvers.tlsresolver.acme.email=business@tedraykov.me
-      - --certificatesresolvers.tlsresolver.acme.storage=/letsencrypt/acme.json
-      # Databyte certificates resolver
-      # - --certificatesresolvers.databyteresolver.acme.tlschallenge=true
-      # # - --certificatesresolvers.databyteresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
-      # - --certificatesresolvers.databyteresolver.acme.email=engineering@databyte.so
-      # - --certificatesresolvers.databyteresolver.acme.storage=/letsencrypt/databyte-acme.json
-
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.tedraykov.me`)
-      - traefik.http.services.traefik.loadbalancer.server.port=8080
-      - traefik.http.routers.traefik.entrypoints=websecure
-      - traefik.http.routers.traefik.tls.certresolver=tlsresolver
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+    restart: unless-stopped
+    depends_on:
+      - dockerproxy
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      # File-based, not an env var: a Portainer stack variable would store the
+      # token in Portainer's database, and env_file with a host path does not
+      # work in Portainer-deployed stacks (compose runs inside its container).
+      - CF_DNS_API_TOKEN_FILE=/run/secrets/cf_token
     volumes:
-      - "/mnt/drive1/config/letsencrypt:/letsencrypt"
-      - "/mnt/drive1/config/certs:/certs"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    logging: *loki-logging
+      - /opt/stacks/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - /opt/stacks/traefik/dynamic:/etc/traefik/dynamic:ro
+      - /opt/stacks/traefik/letsencrypt:/letsencrypt
+      - /opt/stacks/traefik/cf_token:/run/secrets/cf_token:ro
+    networks:
+      default:
+      proxy:
 
 networks:
   proxy:
     name: "proxy"
+    external: true
