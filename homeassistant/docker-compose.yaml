@@ -20,7 +20,10 @@ services:
       - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
       - "traefik.http.routers.homeassistant.tls=true"
 
+  # Not deployed - it was defined on sof1 but never running, and has no
+  # data directory. Start explicitly with: --profile optional
   nodered:
+    profiles: ["optional"]
     container_name: nodered
     image: nodered/node-red
     volumes:
@@ -56,6 +59,9 @@ services:
 
   hass-configurator:
     image: "causticlab/hass-configurator-docker:latest"
+    container_name: hass-configurator
+    ports:
+      - 3218:3218
     restart: always
     volumes:
       - "/opt/stacks/homeassistant/hass-configurator:/config"
@@ -73,6 +79,8 @@ services:
 
   zigbee2mqtt:
     container_name: zigbee2mqtt
+    ports:
+      - 8080:8080
     restart: unless-stopped
     image: koenkk/zigbee2mqtt
     depends_on:

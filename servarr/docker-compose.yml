@@ -9,6 +9,11 @@ name: servarr
 #   /srv/media/torrents/{movies,tv}   <- qBittorrent saves here
 #   /srv/media/media/{movies,tv}      <- *arr imports here, Jellyfin reads here
 
+# Host ports are published deliberately. Traefik on VM 100 still routes via
+# its file provider (http://192.168.1.100:<port>), and the DMZ Traefik on
+# VM 200 proxies to the same addresses for the public path. Removing these
+# breaks both, even once container labels are being read.
+
 x-common: &common
   restart: unless-stopped
   environment: &common-env
@@ -24,6 +29,8 @@ services:
     <<: *common
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
+    ports:
+      - 9696:9696
     volumes:
       - /opt/stacks/servarr/prowlarr:/config
     labels:
@@ -45,6 +52,8 @@ services:
     <<: *common
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
+    ports:
+      - 8989:8989
     volumes:
       - /opt/stacks/servarr/sonarr:/config
       - /srv/media:/data
@@ -59,6 +68,8 @@ services:
     <<: *common
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
+    ports:
+      - 7878:7878
     volumes:
       - /opt/stacks/servarr/radarr:/config
       - /srv/media:/data
@@ -80,6 +91,7 @@ services:
       - /opt/stacks/servarr/qbittorrent:/config
       - /srv/media:/data
     ports:
+      - 8084:8084        # WebUI
       - 6881:6881        # torrent TCP
       - 6881:6881/udp    # torrent UDP
     labels:
@@ -93,6 +105,8 @@ services:
     <<: *common
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
+    ports:
+      - 6767:6767
     volumes:
       - /opt/stacks/servarr/bazarr:/config
       - /srv/media:/data
@@ -107,6 +121,8 @@ services:
     <<: *common
     image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
+    ports:
+      - 5055:5055
     volumes:
       - /opt/stacks/servarr/overseerr:/config
     labels:
