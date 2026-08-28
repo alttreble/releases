@@ -1,0 +1,26 @@
+# Beszel agent for VM 200 (Dokploy / DMZ).
+#
+# SSH mode ON PURPOSE — note there is no HUB_URL here.
+# The default WebSocket mode has the agent dial OUT to the hub, which for VM 200
+# would mean widening `OUT ACCEPT` from the DMZ into the trusted zone. Instead
+# the agent only listens, and the HUB (VM 100) connects IN to 45876. That is
+# trusted -> DMZ, the direction the two-zone design already permits.
+#
+# Requires one rule in /etc/pve/firewall/200.fw, ABOVE the GROUP line:
+#   IN ACCEPT -source 192.168.1.100 -p tcp -dport 45876
+#
+# Deployed on VM 200 with plain `docker compose`, matching how the other
+# VM 200 stacks are staged. Lives at /opt/stacks/beszel/ on that host.
+services:
+  beszel-agent:
+    image: henrygd/beszel-agent:0.18.8
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /opt/appdata/beszel-agent:/var/lib/beszel-agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LISTEN: 45876
+      KEY: ${BESZEL_KEY}
+      TOKEN: ${VM200_AGENT_TOKEN}

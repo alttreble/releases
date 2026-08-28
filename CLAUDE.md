@@ -146,9 +146,11 @@ then redeploy and the change lands. Verified against the Portainer API on
 | 6 | traefik | standalone editor stack |
 | 10 | beszel | standalone editor stack |
 
-Only **6 and 10** are left as editor stacks, and neither has a copy here at all
-— their definitions live only in Portainer's own volume, so editing this repo
-changes nothing for them.
+Only **6 and 10** are left as editor stacks. Stack 6 (traefik) has no copy here
+at all — its definition lives only in Portainer's own volume. Stack 10 (beszel)
+now has one at `beszel/`, but the stack itself is still an editor stack, so
+**editing this repo does not change what beszel runs** until it is converted to
+git-backed.
 
 **Stack 1 no longer exists.** Immich was an editor stack until 2026-08-31.
 Portainer cannot convert one in place, so it was deleted and recreated as a

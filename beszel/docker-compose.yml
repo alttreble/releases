@@ -1,0 +1,44 @@
+# Beszel monitoring — HUB + VM 100 agent.
+#
+# Placement (see CLAUDE.md "Where the live services land"):
+#   The hub lives on VM 100, not VM 200 and not the Proxmox host.
+#     - not VM 200: the DMZ has `OUT DROP -dest +dc/lan`, so a hub there could
+#       reach nothing it is supposed to monitor.
+#     - not the host: the hypervisor stays free of Docker, and the host root fs
+#       is covered by no backup at all (vzdump backs up guests, not the host).
+#       On VM 100 the PocketBase DB rides the nightly vzdump.
+#
+# Deployed through Portainer (endpoint 1) as stack `beszel`.
+# TOKEN/KEY come from Portainer stack env vars — see README.md for why they are
+# not in a bind-mounted file like the Traefik Cloudflare token.
+services:
+  beszel:
+    image: henrygd/beszel:0.18.8
+    container_name: beszel
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      APP_URL: https://beszel.tedraykov.me
+    volumes:
+      # VM 100's own disk (NVMe zvol). Never virtiofs — this is a SQLite DB,
+      # same rule as every other app config in this lab.
+      - /opt/stacks/beszel/data:/beszel_data
+      - /opt/stacks/beszel/socket:/beszel_socket
+
+  beszel-agent:
+    image: henrygd/beszel-agent:0.18.8
+    container_name: beszel-agent
+    restart: unless-stopped
+    # host networking so the agent sees real NIC counters, not the bridge's
+    network_mode: host
+    volumes:
+      - /opt/stacks/beszel/agent-data:/var/lib/beszel-agent
+      # unix socket to the hub: this agent never opens a TCP port
+      - /opt/stacks/beszel/socket:/beszel_socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LISTEN: /beszel_socket/beszel.sock
+      HUB_URL: http://localhost:8090
+      TOKEN: ${VM100_AGENT_TOKEN}
+      KEY: ${BESZEL_KEY}
