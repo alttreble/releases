@@ -112,7 +112,7 @@ consumer edits.
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
 | `minio` | **live on VM 100** | S3 object storage. Git-backed Portainer stack 11. |
 | `n8n` | **live on VM 100** | Git-backed Portainer stack 12. |
-| `excalidraw` | live on **VM 200** | container/data are named `excalidash` |
+| `excalidraw` | live on **VM 200** | **Dokploy-managed, git-sourced from this repo.** Container/data are named `excalidash`. |
 | `minecraft` `monitoring` `plex` | **dormant** | not deployed. Data still at `/mnt/archive/config/*` and `/mnt/archive/data/*` if wanted. |
 
 Removed 2026-08-29 as unwanted: `nextcloud`, `roberts50`, `arbitrage`, `zrok`,
@@ -159,8 +159,8 @@ gitignored `.env` files and bind-mounted secret files, never in a compose.
 Redeploy a git-backed stack:
 `PUT /api/stacks/<id>/git/redeploy?endpointId=1` with `{"pullImage":false}`.
 
-VM 200 keeps its own separate git repo at `/opt/stacks/` on that VM
-(`excalidash`, `minio`, `n8n`, `beszel`), with data under
+VM 200's `/opt/stacks/` repo now holds only `beszel` — `excalidash` became a
+Dokploy-managed deployment on 2026-08-29. Data still lives under
 `/opt/appdata/<svc>` and secrets in `/opt/appdata/env/*.env` (mode 600).
 
 ---
@@ -585,6 +585,42 @@ keys-only.
   outside the guest**, so nothing Docker does can punch through.
 
 If it's ever wanted, it must be configured against `DOCKER-USER`.
+
+## Deploying to Dokploy from this repo
+
+Use the **generic Git provider** (`sourceType: "git"`), not the GitHub one.
+The GitHub integration lists only repositories the Dokploy GitHub App can see,
+and `alttreble/releases` belongs to an **organization**, not a personal account
+— so it does not appear unless the App is installed org-wide. The repo is
+public, so generic Git needs no credentials at all and sidesteps this entirely.
+
+Dokploy's REST API is `POST /api/<router>.<procedure>`, authenticated with an
+**`x-api-key`** header (create one at Settings → API/Swagger). There is no
+`swagger.json` served in v0.30.2 — the input schemas are readable inside the
+container at
+`/app/node_modules/.pnpm/@dokploy+server@*/node_modules/@dokploy/server/dist/db/schema/<router>.js`.
+
+The working sequence — `compose.create` accepts only a subset of fields, so the
+git source has to be set in a second call:
+
+```
+POST /api/compose.create   {name, description, environmentId, composeType:"docker-compose", appName, sourceType:"git"}
+POST /api/compose.update   {composeId, sourceType:"git", customGitUrl, customGitBranch,
+                            composePath:"./<dir>/docker-compose.yml", env:"KEY=value\n...", autoDeploy:true}
+POST /api/compose.deploy   {composeId}
+```
+
+`env` is a single newline-delimited string, and it is stored in **Dokploy's own
+database** — acceptable for services you own, but it is why the Cloudflare
+token must never be handed to Dokploy.
+
+**Remove any hand-rolled stack first.** A compose with an explicit
+`container_name` will collide with the Dokploy deployment and the deploy fails.
+
+| Service | composeId | Source |
+|---|---|---|
+| `plane` | `RwDSRUW6bYlF8ZP3IZTQH` | `raw` — compose pasted into the UI |
+| `excalidash` | `dVMNVxK1ljWL5o2nhWloP` | **`git`** — `alttreble/releases` @ `trunk`, `./excalidraw/docker-compose.yml` |
 
 ## Dokploy
 
