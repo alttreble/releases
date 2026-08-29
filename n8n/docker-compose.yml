@@ -30,7 +30,7 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
-      - WEBHOOK_URL=https://n8n.tedraykov.me/
+      - N8N_WEBHOOK_URL=https://n8n.tedraykov.me/
       - N8N_EDITOR_BASE_URL=https://n8n.tedraykov.me/
       # Traefik terminates TLS in front, so n8n itself speaks plain HTTP and
       # must be told to trust the proxy's forwarded headers.
