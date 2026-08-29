@@ -65,10 +65,12 @@ services:
       - traefik.http.routers.excalidraw.tls=true
       - traefik.http.routers.excalidraw.tls.certresolver=letsencrypt
       - traefik.http.services.excalidraw.loadbalancer.server.port=80
-      # HTTP router kept for the ACME HTTP-01 challenge path.
+      # HTTP router: redirects to HTTPS. Traefik still answers the ACME
+      # HTTP-01 challenge on :80 ahead of this router, so renewal is unaffected.
       - traefik.http.routers.excalidraw-http.rule=Host(`excalidraw.tedraykov.me`)
       - traefik.http.routers.excalidraw-http.entrypoints=web
       - traefik.http.routers.excalidraw-http.service=excalidraw
+      - traefik.http.routers.excalidraw-http.middlewares=redirect-to-https@file
 
 networks:
   dokploy-network:
