@@ -110,14 +110,10 @@ consumer edits.
 | `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, overseerr, flaresolverr |
 | `traefik` | **live on VM 100** | v3.7, wildcard cert |
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
+| `minio` | **live on VM 100** | S3 object storage. Git-backed Portainer stack 11. |
+| `n8n` | **live on VM 100** | Git-backed Portainer stack 12. |
 | `excalidraw` | live on **VM 200** | container/data are named `excalidash` |
-| `n8n` | **not running anywhere** | slated for VM 100 |
 | `minecraft` `monitoring` `plex` | **dormant** | not deployed. Data still at `/mnt/archive/config/*` and `/mnt/archive/data/*` if wanted. |
-
-**`minio` runs on VM 200 but is no longer in this repo** — it was pruned here
-on 2026-08-29 while still live. Its definition survives only in VM 200's own
-`/opt/stacks/minio/`. Recover from this repo's git history if it moves to
-VM 100.
 
 Removed 2026-08-29 as unwanted: `nextcloud`, `roberts50`, `arbitrage`, `zrok`,
 `pelias`, `wordpress`, `dnsmasq`, then `kafka`, `minio`, `prefect`,
@@ -127,14 +123,18 @@ now; `plex` and `utorrent` were superseded by `jellyfin` and `qbittorrent`.)
 
 Several dormant stacks still carry `*.treble.bg` Traefik labels and
 `certresolver=tlsresolver` from the `sof1` era. The live domain is
-`tedraykov.me` and the VM 100 resolver is named `letsencrypt`. **Fix the labels
-before deploying any of them.**
+`tedraykov.me`; **VM 100's resolver is named `cloudflare`** (DNS-01) and
+VM 200's is `letsencrypt` (HTTP-01). On VM 100 a label only needs `tls=true` —
+`tls.yml` sets a default generated wildcard cert, so no resolver is named per
+router. **Fix the labels before deploying any of them.**
 
 ## How this repo reaches the running containers
 
-Not GitOps — there is no webhook and no remote pull. **Portainer stacks 7, 8
-and 9 are uploaded copies of this entire repository**, and each deploys one
-subdirectory's compose file:
+**Mixed.** Stacks 11 and 12 are true **git-backed** stacks that pull from
+`https://github.com/alttreble/releases` (`refs/heads/trunk`) — edit here, push,
+then redeploy and the change lands. Everything else predates that and is an
+**uploaded copy** of this entire repository, deploying one subdirectory's
+compose file:
 
 | Portainer stack | Deploys | Config file |
 |---|---|---|
@@ -144,10 +144,20 @@ subdirectory's compose file:
 | 1 | immich | standalone editor stack |
 | 6 | traefik | standalone editor stack |
 | 10 | beszel | standalone editor stack |
+| **11** | **minio** | **git-backed** → `minio/docker-compose.yaml` |
+| **12** | **n8n** | **git-backed** → `n8n/docker-compose.yml` |
 
-So **editing a file here changes nothing until the stack is re-uploaded or
-edited in Portainer.** Stacks 1, 6 and 10 have no copy here at all — their
-definitions live only in Portainer's own volume.
+So for stacks 1 and 6–10, **editing a file here changes nothing until the stack
+is re-uploaded or edited in Portainer.** Stacks 1, 6 and 10 have no copy here at
+all — their definitions live only in Portainer's own volume. Migrating the
+remaining ones to git-backed stacks is the obvious cleanup.
+
+The repo is **public**, so Portainer needs no credentials to pull it. That also
+means everything committed here is internet-readable — keep secrets in
+gitignored `.env` files and bind-mounted secret files, never in a compose.
+
+Redeploy a git-backed stack:
+`PUT /api/stacks/<id>/git/redeploy?endpointId=1` with `{"pullImage":false}`.
 
 VM 200 keeps its own separate git repo at `/opt/stacks/` on that VM
 (`excalidash`, `minio`, `n8n`, `beszel`), with data under
@@ -256,9 +266,8 @@ relying on NAT hairpin (which the Huawei ONT was never confirmed to do).
 
 - Upstream: `https://dns10.quad9.net/dns-query` (DoH), bootstrap `9.9.9.10`
 - **`*.tedraykov.me` → `192.168.1.100`** (wildcard, VM 100's Traefik)
-- Per-name overrides → `192.168.1.200` for the DMZ apps:
-  `n8n`, `minio`, `minio-console`, `excalidraw`, `plane`
-  (backup before edits: `/opt/AdGuardHome/AdGuardHome.yaml.bak-preperfume`)
+- Per-name overrides → `192.168.1.200` for the DMZ apps: `excalidraw`, `plane`
+  (backups: `/opt/AdGuardHome/AdGuardHome.yaml.bak-*`)
 
 So a LAN client goes straight to the serving VM; the public internet goes
 through the router forward to VM 200. **When a service moves between VMs, the
@@ -368,10 +377,14 @@ blocked.
 
 ## Staged but not public
 
-`n8n`, `minio`, `minio-console`, `excalidraw` have DNS pointing at
-the public IP but **no certificate and no `websecure` router** — their Traefik
-labels are still `entrypoints=web` only. HTTPS to them fails with TLS error 18.
-They resolve correctly on the LAN via AdGuard.
+`excalidraw` has DNS pointing at the public IP but **no certificate and no
+`websecure` router** on the DMZ Traefik — its labels are `entrypoints=web`
+only, so public HTTPS fails with TLS error 18. It resolves to VM 200 on the LAN
+via AdGuard and works there over HTTP.
+
+`minio`, `minio-console` and `n8n` are now served by **VM 100's** Traefik over
+HTTPS with the wildcard cert, LAN/VPN only — they are deliberately **not**
+public (no DMZ firewall hole, no route in `vm100.yml`).
 
 ## ⚠ Home Assistant behind a proxy — `.storage/http` overrides YAML
 
@@ -553,10 +566,12 @@ through it. ACME email `business@tedraykov.me` in
 | Service | State |
 |---|---|
 | Plane v1.3.1 (13 containers) | **up, public at `plane.tedraykov.me`** |
-| minio | up, HTTP-only, not public |
 | excalidash frontend/backend | up, HTTP-only, not public |
-| n8n | **not deployed** |
 | beszel-agent | up |
+
+`minio` and `n8n` **left VM 200 on 2026-08-29** — data migrated to VM 100 and
+the DMZ copies deleted, MinIO's root credentials shredded. VM 200's only
+remaining secret is `excalidash.env`.
 
 `excalidash-backend` reports **unhealthy** — pre-existing, and true on `sof1`
 too. Its healthcheck curls `/health` over localhost HTTP but `TRUST_PROXY=1` +
@@ -567,7 +582,7 @@ app serves correctly. Not worth fixing.
 
 `n8n` is **cutover-only** — its workflows are *active* (`Домоуправител`,
 `Домоуправител — разнасяне на вноски`, `OLX Watcher`) and would fire twice if
-two instances ran. Start it in exactly one place.
+two instances ran. It now runs **only on VM 100**. Never start a second copy.
 
 ## Dokploy multi-tenancy — verified against the v0.30.2 source
 
@@ -594,11 +609,11 @@ is a full takeover. The permission flags gate the **UI**, not the code. There
 is no sandbox between tenants — one daemon, one Swarm.
 
 The DMZ bounds the blast radius, and the plan always labelled VM 200 *"untrusted
-code, treat as hostile"*. **But VM 200 still stores** MinIO root credentials, excalidash's JWT/CSRF
-secrets, and n8n's staged credential store at `/opt/appdata/n8n` — data left
-behind is as readable as data in use. perfume-app's Anthropic key and Turso
-token were **removed on 2026-08-29** along with its orphaned containers; both
-should still be rotated at source, since deletion does not undo prior exposure.
+code, treat as hostile"*. **Cleaned up 2026-08-29**: perfume-app's Anthropic key and Turso token were
+shredded with its orphaned containers, and MinIO's root credentials left with
+MinIO itself. Both sets should still be **rotated at source** — deletion does
+not undo prior exposure. VM 200's only remaining secret is excalidash's
+JWT/CSRF pair, plus whatever Dokploy's own database holds.
 
 **Decision: accepted — invite only people you actually know.** If that stops
 being true, move your own apps to VM 100 behind the same per-port allowlist.
@@ -656,8 +671,19 @@ no new issuance.**
 
 Routes live in `/opt/stacks/traefik/dynamic/homelab.yml` as a **file provider**
 pointing at `http://192.168.1.100:<port>` — chosen over Docker labels so the
-existing stacks did not have to be redeployed onto a shared network. To add a
-service: publish its port, add a router+service pair.
+existing stacks did not have to be redeployed onto a shared network.
+**Traefik on VM 100 has no Docker provider at all**, so container labels there
+are inert; they are kept only for parity and future use. To add a service:
+publish its port, add a router+service pair, restart traefik.
+
+`tls.yml` sets a `defaultGeneratedCert` for `tedraykov.me` + `*.tedraykov.me`
+via the `cloudflare` resolver, so a router only needs `tls: {}` — never name a
+resolver per router.
+
+**Gotcha:** `homelab.yml` ends with a `serversTransports:` section *after*
+`services:`. Appending a service at EOF silently nests it under
+`serversTransports` and Traefik fails with `field not found, node: loadBalancer`.
+Insert before that section. Backups: `homelab.yml.bak-*`.
 
 ## The Cloudflare token — three things that cost time
 
@@ -723,12 +749,14 @@ forward, which is why nothing could issue before the cutover.
 
 1. **Off-site backup of the photo library.** The mirror is not a backup. This
    is the largest remaining risk.
-2. **Move `n8n`, `minio` and `excalidraw` to VM 100.** Per service: stop on
-   VM 200 → copy `/opt/appdata/<svc>` → `/opt/stacks/<svc>/…` on VM 100 → start
-   → add a route to VM 100's `homelab.yml` (wildcard cert already covers it) →
-   **update the AdGuard rewrite to drop the `.200` override** → add DMZ→VM 100
-   firewall holes if they should stay public. n8n is the delicate one: its
-   workflows are active, so it must run in exactly one place.
+2. **`excalidraw` is the last of yours still in the DMZ.** Same recipe as the
+   minio/n8n move: stop on VM 200 → copy `/opt/appdata/excalidash` →
+   `/opt/stacks/excalidraw/prisma` on VM 100 → add a route to `homelab.yml` →
+   drop the AdGuard `.200` override. Low urgency: it holds only drawings.
+3. **Rotate** the Anthropic key, Turso token and MinIO root credentials — they
+   sat on the DMZ VM for a week.
+4. **Migrate stacks 1 and 6–10 to git-backed** Portainer stacks so this repo is
+   the single source of truth for all of them, as 11 and 12 now are.
 3. **WireGuard** — UDP 51820 forward not yet configured. No remote access
    except through the public services.
 5. **Dormant stacks** carry stale `*.treble.bg` labels and `tlsresolver`. Fix
