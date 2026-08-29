@@ -1,76 +1,75 @@
+name: excalidash
+
+# Excalidash - deployed on VM 200 as a DOKPLOY-MANAGED compose service sourced
+# from this repository (Git provider -> excalidraw/docker-compose.yml), not by
+# pasting compose into the UI. Dokploy owns the lifecycle; this file is the
+# source of truth.
+#
+# Differences from the VM 100 stacks, all because this runs behind Dokploy:
+#   - joins `dokploy-network`, the external network Dokploy's Traefik watches
+#   - routing is by container LABELS (Dokploy's Traefik has a docker provider);
+#     VM 100's Traefik is file-provider only, where labels would be inert
+#   - certResolver is `letsencrypt` (HTTP-01). VM 100 uses `cloudflare`
+#     (DNS-01), whose token must never be present on this VM.
+#
+# JWT_SECRET / CSRF_SECRET / AUTH_MODE come from the Dokploy service's own
+# Environment settings. Changing JWT_SECRET invalidates every existing session.
+
 services:
   backend:
     image: zimengxiong/excalidash-backend:latest
     container_name: excalidash-backend
+    restart: unless-stopped
     environment:
       - DATABASE_URL=file:/app/prisma/dev.db
       - PORT=8000
       - NODE_ENV=production
-      - AUTH_MODE=${AUTH_MODE:-local}
       - FRONTEND_URL=https://excalidraw.tedraykov.me
-      # Keep disabled by default; only enable when a trusted proxy sanitizes forwarded headers.
       - TRUST_PROXY=1
-      # Optional for single-instance deployments:
-      # if unset, backend auto-generates and persists one in the volume.
-      # Recommended to set explicitly for portability and multi-instance setups.
+      - AUTH_MODE=${AUTH_MODE:-local}
       - JWT_SECRET=${JWT_SECRET}
       - CSRF_SECRET=${CSRF_SECRET}
-      # Optional OIDC settings (required for AUTH_MODE=hybrid or oidc_enforced)
-      # - OIDC_PROVIDER_NAME=Authentik
-      # - OIDC_ISSUER_URL=https://auth.example.com/application/o/excalidash/
-      # - OIDC_CLIENT_ID=your-client-id
-      # - OIDC_CLIENT_SECRET=your-client-secret
-      # - OIDC_REDIRECT_URI=https://excalidash.example.com/api/auth/oidc/callback
     volumes:
-      - /opt/stacks/excalidraw/prisma:/app/prisma
+      - /opt/appdata/excalidash:/app/prisma
     networks:
       default:
-      proxy:
-    restart: unless-stopped
+      dokploy-network:
+    # Reports unhealthy by design and always has, on sof1 too: the check curls
+    # /health over plain HTTP, but TRUST_PROXY=1 + FRONTEND_URL make the app
+    # 302 it to HTTPS, so it can never return 200. The app serves correctly.
     healthcheck:
-      # Use IPv4 loopback explicitly to avoid IPv6 localhost resolution issues.
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://127.0.0.1:8000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))",
-        ]
+      test: ["CMD","node","-e","require('http').get('http://127.0.0.1:8000/health',(r)=>process.exit(r.statusCode===200?0:1))"]
       interval: 30s
       timeout: 10s
       retries: 3
+
   frontend:
     image: zimengxiong/excalidash-frontend:latest
     container_name: excalidash-frontend
+    restart: unless-stopped
     depends_on:
       - backend
     networks:
       default:
-      proxy:
-    restart: unless-stopped
+      dokploy-network:
     healthcheck:
-      # Use IPv4 loopback explicitly to avoid IPv6 localhost resolution issues.
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://127.0.0.1:80",
-        ]
+      test: ["CMD","wget","--quiet","--tries=1","--spider","http://127.0.0.1:80"]
       interval: 30s
       timeout: 10s
       retries: 3
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.excalidraw.rule=Host(`excalidraw.tedraykov.me`)"
-      - "traefik.http.routers.excalidraw.entrypoints=websecure"
-      - "traefik.http.services.excalidraw.loadbalancer.server.port=80"
-      - "traefik.http.routers.excalidraw.tls.certresolver=tlsresolver"
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.excalidraw.rule=Host(`excalidraw.tedraykov.me`)
+      - traefik.http.routers.excalidraw.entrypoints=websecure
+      - traefik.http.routers.excalidraw.tls=true
+      - traefik.http.routers.excalidraw.tls.certresolver=letsencrypt
+      - traefik.http.services.excalidraw.loadbalancer.server.port=80
+      # HTTP router kept for the ACME HTTP-01 challenge path.
+      - traefik.http.routers.excalidraw-http.rule=Host(`excalidraw.tedraykov.me`)
+      - traefik.http.routers.excalidraw-http.entrypoints=web
+      - traefik.http.routers.excalidraw-http.service=excalidraw
 
 networks:
-  proxy:
-    name: "proxy"
+  dokploy-network:
     external: true

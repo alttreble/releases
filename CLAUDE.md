@@ -360,7 +360,45 @@ on every one:
 | `zigbee2mqtt` | 8080 | `qbittorrent` | 8084 |
 | `overseerr` | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
 
-Plus **`plane`**, which runs on VM 200 itself via Dokploy.
+Plus **`plane`** and **`excalidraw`**, which run on VM 200 itself via Dokploy.
+
+## DNS is now a single wildcard record
+
+Cloudflare holds **exactly one** record: `*.tedraykov.me A → 83.228.116.18`.
+Every per-name record was removed, including `beszel`, which had pointed at
+`192.168.1.100` — a private address, so Let's Encrypt could not validate it and
+its certificate failed until the record was deleted. **Never point a public A
+record at a 192.168.x.x address for a name that needs HTTP-01.**
+
+### The wildcard DNS record and the wildcard certificate are different things
+
+A frequent source of confusion. `*.tedraykov.me A → 83.228.116.18` is
+**routing** — it says where to send traffic. The Cloudflare **API token** on
+VM 100 is for the ACME **DNS-01 challenge**: Traefik writes a temporary
+`_acme-challenge` TXT record to prove domain control, then deletes it. That is
+the only way to obtain a **wildcard TLS certificate**, and the only way to get
+any certificate for a host that is not internet-reachable.
+
+So the token is not what makes the names resolve. It is what lets **VM 100**
+serve valid HTTPS on the LAN fast path without being internet-reachable.
+Remove the token and VM 100's Traefik has no way to obtain a certificate →
+you would have to drop it and route all LAN traffic through the DMZ.
+
+### ⚠ IPv6 breaks split-horizon DNS
+
+The Huawei ONT advertises **itself** as a DNS server over IPv6 router
+advertisement, and that entry sorts *ahead* of AdGuard on clients:
+
+```
+nameserver[0] : fe80::1%en0      <- the router, via IPv6 RA
+nameserver[1] : 192.168.1.53     <- AdGuard
+```
+
+So a LAN client often resolves via the router, gets the public IP, and reaches
+VM 200 instead of VM 100. While every name was public this was invisible; it
+surfaced as "n8n has no certificate" when n8n was VM-100-only. Now that all
+names work through both paths it is cosmetic — but it means **AdGuard's
+wildcard rewrite cannot be relied on** as the only route to anything.
 
 The DMZ→VM 100 holes are an allowlist of exactly the ports that are published
 to the internet anyway — coherent, and **nothing else**. Verified from inside
@@ -377,14 +415,9 @@ blocked.
 
 ## Staged but not public
 
-`excalidraw` has DNS pointing at the public IP but **no certificate and no
-`websecure` router** on the DMZ Traefik — its labels are `entrypoints=web`
-only, so public HTTPS fails with TLS error 18. It resolves to VM 200 on the LAN
-via AdGuard and works there over HTTP.
-
-`minio`, `minio-console` and `n8n` are now served by **VM 100's** Traefik over
-HTTPS with the wildcard cert, LAN/VPN only — they are deliberately **not**
-public (no DMZ firewall hole, no route in `vm100.yml`).
+Nothing. As of 2026-08-29 **every service is public over HTTPS** — `minio`,
+`minio-console`, `n8n` and `beszel` were added to the DMZ path with the same
+three-piece pattern, and all hold valid certificates.
 
 ## ⚠ Home Assistant behind a proxy — `.storage/http` overrides YAML
 
