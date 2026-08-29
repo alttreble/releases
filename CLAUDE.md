@@ -586,6 +586,69 @@ keys-only.
 
 If it's ever wanted, it must be configured against `DOCKER-USER`.
 
+## Declaring Dokploy domains in the compose file
+
+**Yes — and this repo does it.** Dokploy's Traefik runs a **docker provider**
+(`exposedByDefault: false`, `network: dokploy-network`), so ordinary Traefik
+container labels are read directly. Dokploy clones the repo to
+`/etc/dokploy/compose/<appName>/code/` and **does not rewrite the compose
+file**, so labels pass through verbatim.
+
+There are two ways a domain can reach Traefik, and they should not be mixed:
+
+| | UI-managed domain | Labels in compose |
+|---|---|---|
+| Stored in | Dokploy's Postgres (`domain` table) | **this repo** |
+| Router names | generated, e.g. `alt-treble-plane-gxu4db-2-web` | whatever you name them |
+| Shows in Dokploy UI | yes | no |
+| Survives a rebuild from git alone | no — needs the DB | **yes** |
+| Used by | `plane` | `excalidash` |
+
+The declarative version is the better default here: the domain lives in git next
+to the service, and a rebuild from a clean Dokploy needs nothing but this repo.
+The cost is that Dokploy's Domains tab shows nothing, so the UI is not the
+source of truth — the file is.
+
+### The template to copy
+
+```yaml
+labels:
+  - traefik.enable=true
+  - traefik.docker.network=dokploy-network
+  # HTTPS
+  - traefik.http.routers.<name>.rule=Host(`<name>.tedraykov.me`)
+  - traefik.http.routers.<name>.entrypoints=websecure
+  - traefik.http.routers.<name>.tls=true
+  - traefik.http.routers.<name>.tls.certresolver=letsencrypt
+  - traefik.http.services.<name>.loadbalancer.server.port=<container port>
+  # HTTP -> HTTPS
+  - traefik.http.routers.<name>-http.rule=Host(`<name>.tedraykov.me`)
+  - traefik.http.routers.<name>-http.entrypoints=web
+  - traefik.http.routers.<name>-http.service=<name>
+  - traefik.http.routers.<name>-http.middlewares=redirect-to-https@file
+```
+
+Four things that are easy to get wrong:
+
+1. **`redirect-to-https@file` must be added by hand.** Dokploy attaches it
+   automatically to UI-managed domains; hand-written labels do not get it, so
+   plain HTTP is served instead of redirecting. The middleware is defined in
+   `/etc/dokploy/traefik/dynamic/middlewares.yml`.
+2. **The service must join `dokploy-network`** (external) or the docker
+   provider ignores it entirely.
+3. `certresolver=letsencrypt` is technically redundant — the `websecure`
+   entrypoint already defaults to it — but state it anyway; it documents intent
+   and survives a change to the static config.
+4. **Do not also add a UI domain for the same host.** You get two router sets
+   for one hostname and the winner is arbitrary.
+
+The ACME HTTP-01 challenge still works with the redirect in place: Traefik
+answers `/.well-known/acme-challenge/` on `:80` at a higher priority than user
+routers. Verified on excalidash — cert issued *after* the redirect was added.
+
+**On VM 100 this does not apply.** That Traefik has *only* a file provider, so
+labels there are inert and routes go in `/opt/stacks/traefik/dynamic/homelab.yml`.
+
 ## Deploying to Dokploy from this repo
 
 Use the **generic Git provider** (`sourceType: "git"`), not the GitHub one.
