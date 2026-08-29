@@ -20,6 +20,6 @@ services:
       - ADVERTISE_IP=http://192.168.1.14:32400/
     hostname: PlexServer
     volumes:
-      - /mnt/drive1/config/plex:/config
-      - /mnt/drive1/data/transcode:/transcode
-      - /mnt/drive1/data/plex:/data
+      - /opt/stacks/plex/config:/config
+      - /opt/stacks/plex/transcode:/transcode
+      - /srv/media:/data

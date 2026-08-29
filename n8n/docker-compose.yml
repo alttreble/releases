@@ -1,28 +1,51 @@
-version: '3.8'
+name: n8n
 
-volumes:
-  db_storage:
-  n8n_storage:
+# Workflow automation. Moved to VM 100 on 2026-08-29 - it holds a credential
+# store (every API key for every integration it touches) and can make outbound
+# calls anywhere, which makes it the worst thing to leave in a tenant-shared VM.
+#
+# CUTOVER-ONLY SERVICE. Its workflows are *active* (Домоуправител, Домоуправител
+# - разнасяне на вноски, OLX Watcher). Two running instances fire the same
+# automations twice. Never run it in two places at once.
+#
+# There is deliberately no N8N_ENCRYPTION_KEY here: n8n reads the key from
+# /home/node/.n8n/config, which travels with the data directory. Setting a
+# different one would make every stored credential undecryptable.
+#
+# Pinned to 2.34.4 - the version sof1 ran. Do not bump it in the same change
+# that moves the data.
+#
+# Ports are published deliberately: Traefik on VM 100 routes via its file
+# provider (http://192.168.1.100:5678), not via container labels.
 
 services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:2.34.4
-    restart: always
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - 5678:5678
     environment:
       - N8N_HOST=n8n.tedraykov.me
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
-      - N8N_WEBHOOK_URL=https://n8n.tedraykov.me/
+      - WEBHOOK_URL=https://n8n.tedraykov.me/
+      - N8N_EDITOR_BASE_URL=https://n8n.tedraykov.me/
+      # Traefik terminates TLS in front, so n8n itself speaks plain HTTP and
+      # must be told to trust the proxy's forwarded headers.
+      - N8N_PROXY_HOPS=1
+      - GENERIC_TIMEZONE=Europe/Sofia
+      - TZ=Europe/Sofia
     volumes:
-      - /mnt/drive1/data/n8n:/home/node/.n8n
+      - /opt/stacks/n8n/data:/home/node/.n8n
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.n8n.rule=Host(`n8n.tedraykov.me`)"
       - "traefik.http.routers.n8n.entrypoints=websecure"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
-      - "traefik.http.routers.n8n.tls.certresolver=tlsresolver"
+      - "traefik.http.routers.n8n.tls=true"
     networks:
       default:
       proxy:

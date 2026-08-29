@@ -13,8 +13,8 @@ services:
     container_name: prometheus
     image: prom/prometheus:v2.47.0
     volumes:
-      - /mnt/drive1/config/prometheus/settings/:/etc/prometheus/
-      - /mnt/drive1/config/prometheus/data:/prometheus
+      - /opt/stacks/monitoring/prometheus/settings/:/etc/prometheus/
+      - /opt/stacks/monitoring/prometheus/data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -41,8 +41,8 @@ services:
     depends_on:
       - prometheus
     volumes:
-      - /mnt/drive1/config/grafana/data:/var/lib/grafana
-      - /mnt/drive1/config/grafana/settings/:/etc/grafana/provisioning/
+      - /opt/stacks/monitoring/grafana/data:/var/lib/grafana
+      - /opt/stacks/monitoring/grafana/settings/:/etc/grafana/provisioning/
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
@@ -65,8 +65,8 @@ services:
     command: -config.file=/mnt/config/loki-config.yml
     restart: unless-stopped
     volumes:
-      - /mnt/drive1/config/loki/data:/loki
-      - /mnt/drive1/config/loki/settings/loki-config.yml:/mnt/config/loki-config.yml
+      - /opt/stacks/monitoring/loki/data:/loki
+      - /opt/stacks/monitoring/loki/settings/loki-config.yml:/mnt/config/loki-config.yml
     ports:
       - 127.0.0.1:3100:3100
     networks:
@@ -92,7 +92,7 @@ services:
       # logs for linux host only
       #- /var/log:/host/log
       - /var/lib/docker/containers:/host/containers
-      - /mnt/drive1/config/promtail/settings/promtail-config.yaml:/mnt/config/promtail-config.yaml
+      - /opt/stacks/monitoring/promtail/settings/promtail-config.yaml:/mnt/config/promtail-config.yaml
     command: -config.file /mnt/config/promtail-config.yaml
     networks:
       default:

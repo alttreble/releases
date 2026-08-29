@@ -12,4 +12,4 @@ services:
       ONLINE_MODE: "FALSE"
       VERSION: ${MINECRAFT_VERSION}
     volumes:
-      - /mnt/drive1/data/minecraft:/data
+      - /opt/stacks/minecraft/data:/data

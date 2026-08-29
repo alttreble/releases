@@ -22,7 +22,7 @@ services:
       # - OIDC_CLIENT_SECRET=your-client-secret
       # - OIDC_REDIRECT_URI=https://excalidash.example.com/api/auth/oidc/callback
     volumes:
-      - /mnt/drive1/data/excalidash:/app/prisma
+      - /opt/stacks/excalidraw/prisma:/app/prisma
     networks:
       default:
       proxy:

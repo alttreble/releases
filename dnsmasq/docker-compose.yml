@@ -1,8 +1,0 @@
-services:
-  dnsmasq:
-    image: strm/dnsmasq
-    container_name: dnsmasq
-    network_mode: "host"
-    volumes:
-      - ./dnsmasq.conf:/etc/dnsmasq.conf
-    restart: always
