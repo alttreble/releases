@@ -1,7 +1,14 @@
 name: immich
 
-# Photo library. Migrated from sof1 2026-08-23, converted to a git-backed
-# Portainer stack 2026-08-31 (stack 1) - this file is now the source of truth.
+# Photo library. Migrated from sof1 2026-08-23. Converted from Portainer stack
+# 1 (an uploaded editor stack) to git-backed stack 13 on 2026-08-31 - this file
+# is now the source of truth, and a redeploy is
+#   PUT /api/stacks/13/git/redeploy?endpointId=1  {"pullImage":true}
+#
+# Upgraded 1.120.2 -> 3.1.0 the same day, and it had to be done in three hops:
+# 1.132.3 (v1.137.0's TypeORM gate), then 2.7.5 (the pgvecto.rs -> VectorChord
+# migration, which v3 deleted), then 3.1.0. See the git log for why each stop
+# exists before collapsing them.
 #
 # TWO STORAGE TIERS, and the split is not negotiable:
 #   /srv/immich                 -> tank/immich (ZFS mirror) via virtiofs. Bulk
@@ -23,9 +30,7 @@ name: immich
 services:
   immich-server:
     container_name: immich_server
-    # SECOND WAY-POINT. The TypeORM gate (1.132.3) is behind us; this stop
-    # exists to run the pgvecto.rs -> VectorChord migration, which v3 deleted.
-    image: ghcr.io/immich-app/immich-server:v2.7.5
+    image: ghcr.io/immich-app/immich-server:v3.1.0
     restart: always
     ports:
       - 2283:2283
@@ -43,6 +48,18 @@ services:
     depends_on:
       - redis
       - database
+    # NVENC, inlined from upstream's hwaccel.transcoding.yml `nvenc` service so
+    # this stays a single file Portainer can deploy. The RTX 3060 is already
+    # doing Jellyfin's transcoding; no /dev/dri is involved on either.
+    # Still needs Hardware Acceleration = NVENC set in Immich's admin settings -
+    # this only grants the container the device.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute, video]
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -56,16 +73,28 @@ services:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:v2.7.5
+    # -cuda, not the plain tag. The plain image is CPU-only ONNX, which is what
+    # this stack had been running since the sof1 migration - the GPU device
+    # reservation that used to sit here did nothing, because the image had no
+    # CUDA runtime to use it. Smart search and face recognition are the two
+    # jobs that care.
+    image: ghcr.io/immich-app/immich-machine-learning:v3.1.0-cuda
     restart: always
     volumes:
       - model-cache:/cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   redis:
     container_name: immich_redis
     # Valkey, per upstream. Immich only uses this as a BullMQ queue and it has
     # no volume, so the swap costs nothing but in-flight jobs, which requeue.
-    image: docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
+    image: docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
     restart: always
     healthcheck:
       test: redis-cli ping || exit 1
