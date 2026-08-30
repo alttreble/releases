@@ -23,7 +23,12 @@ name: immich
 services:
   immich-server:
     container_name: immich_server
-    image: ghcr.io/immich-app/immich-server:v1.120.2
+    # MANDATORY WAY-POINT on the road to v3, not a destination. v1.137.0 removed
+    # TypeORM and refuses to migrate unless Immich has started at least once on
+    # 1.132.0-1.136.0; skipping this gives "Migrations failed: Error: Invalid
+    # upgrade path". 1.132.3 is the version the error page names - 1.136.0 has a
+    # blocking bug when coming from <=1.131.
+    image: ghcr.io/immich-app/immich-server:v1.132.3
     restart: always
     ports:
       - 2283:2283
@@ -54,7 +59,7 @@ services:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:v1.120.2
+    image: ghcr.io/immich-app/immich-machine-learning:v1.132.3
     restart: always
     volumes:
       - model-cache:/cache
