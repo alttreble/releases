@@ -1,23 +1,46 @@
+name: immich
+
+# Photo library. Migrated from sof1 2026-08-23, converted to a git-backed
+# Portainer stack 2026-08-31 (stack 1) - this file is now the source of truth.
+#
+# TWO STORAGE TIERS, and the split is not negotiable:
+#   /srv/immich                 -> tank/immich (ZFS mirror) via virtiofs. Bulk
+#                                  media only. 124 G, irreplaceable.
+#   /opt/stacks/immich/pgdata   -> VM 100's own zvol (ext4 on NVMe). NEVER put
+#                                  Postgres on virtiofs - locking corruption.
+#
+# The DB password is bind-mounted from /opt/stacks/immich/secrets/db_password
+# (mode 600, owned 999:999 so the postgres user inside the container can read
+# it) and consumed via the _FILE variants. This repo is PUBLIC - nothing that
+# lands here may contain a secret, and a Portainer stack variable would only
+# have moved the password into Portainer's own database.
+#
+# Ports are published deliberately: Traefik on VM 100 routes via its file
+# provider (/opt/stacks/traefik/dynamic/homelab.yml -> http://192.168.1.100:2283),
+# not via container labels. The labels below are kept for parity with the other
+# VM 100 stacks and are inert until a docker provider is added.
+
 services:
   immich-server:
     container_name: immich_server
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:?set IMMICH_VERSION in .env - never use :release}
-    volumes:
-      - /srv/immich:/usr/src/app/upload   # HDD mirror via virtiofs
-      - /etc/localtime:/etc/localtime:ro
-    environment:
-      - DB_PASSWORD
-      - DB_HOSTNAME
-      - DB_USERNAME
-      - DB_DATABASE_NAME
-      - REDIS_HOSTNAME
-      - TYPESENSE_API_KEY
+    image: ghcr.io/immich-app/immich-server:v1.120.2
+    restart: always
     ports:
       - 2283:2283
+    volumes:
+      - /srv/immich:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+      - /opt/stacks/immich/secrets/db_password:/run/secrets/db_password:ro
+    environment:
+      - DB_HOSTNAME=immich_postgres
+      - DB_USERNAME=postgres
+      - DB_DATABASE_NAME=immich
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - REDIS_HOSTNAME=immich_redis
+      - TZ=Europe/Sofia
     depends_on:
       - redis
       - database
-    restart: always
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -31,35 +54,28 @@ services:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:?set IMMICH_VERSION in .env - never use :release}
+    image: ghcr.io/immich-app/immich-machine-learning:v1.120.2
+    restart: always
     volumes:
       - model-cache:/cache
-    environment:
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    restart: always
 
   redis:
     container_name: immich_redis
-    image: redis:6.2-alpine@sha256:afb290a0a0d0b2bd7537b62ebff1eb84d045c757c1c31ca2ca48c79536c0de82
+    image: redis:6.2-alpine
     restart: always
 
   database:
     container_name: immich_postgres
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_DB: ${DB_DATABASE_NAME}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0
     restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=immich
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - /opt/stacks/immich/pgdata:/var/lib/postgresql/data
+      - /opt/stacks/immich/secrets/db_password:/run/secrets/db_password:ro
 
 networks:
   proxy:
@@ -67,5 +83,4 @@ networks:
     external: true
 
 volumes:
-  pgdata:
   model-cache:
