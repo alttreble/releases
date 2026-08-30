@@ -8,7 +8,7 @@ runs on a single Proxmox VE 9 host; the migration off the old `sof1` box is
 (fetch with WebFetch if you need detail). Much of it is now historical — where
 the plan and this file disagree, **this file is what was actually built.**
 
-Last verified against live infrastructure: **2026-08-29**.
+Last verified against live infrastructure: **2026-08-31**.
 
 ## Host access
 
@@ -84,7 +84,7 @@ gitignored** (`**/.env`) — secrets never land here.
 |---|---|---|
 | App config, databases, small state | **`/opt/stacks/<stack>/<subdir>`** | VM 100's own zvol (ext4 on NVMe). Proper block semantics for SQLite/Postgres; covered by `vzdump`. |
 | Bulk media, downloads | **`/srv/media`** | ZFS `tank/media`, virtiofs into the VM |
-| Photo library | **`/srv/immich`** | ZFS `tank/immich`, virtiofs into the VM |
+| Photo library | **`/srv/immich`** | ZFS `tank/immich`, virtiofs into the VM. Mounted at **`/data`** in the container since 2026-08-31, not `/usr/src/app/upload`. |
 
 The old `/mnt/drive1/{config,data}/*` paths are **dead** and were removed from
 every compose file on 2026-08-29. That drive is now inside this host and its
@@ -106,7 +106,7 @@ consumer edits.
 |---|---|---|
 | `homeassistant` | **live on VM 100** | HA, mosquitto, zigbee2mqtt, hass-configurator. `nodered` is behind `profiles: ["optional"]` — defined on `sof1` but never ran. |
 | `jellyfin` | **live on VM 100** | NVENC verified |
-| `immich` | **live on VM 100** | v1.120.2 pinned |
+| `immich` | **live on VM 100** | v3.1.0. Git-backed Portainer stack **13**. Library at `/data`, CUDA ML + NVENC. |
 | `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, overseerr, flaresolverr |
 | `traefik` | **live on VM 100** | v3.7, wildcard cert |
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
@@ -130,27 +130,33 @@ router. **Fix the labels before deploying any of them.**
 
 ## How this repo reaches the running containers
 
-**Mixed.** Stacks 11 and 12 are true **git-backed** stacks that pull from
+**Mostly git-backed now.** Six of the eight stacks pull from
 `https://github.com/alttreble/releases` (`refs/heads/trunk`) — edit here, push,
-then redeploy and the change lands. Everything else predates that and is an
-**uploaded copy** of this entire repository, deploying one subdirectory's
-compose file:
+then redeploy and the change lands. Verified against the Portainer API on
+2026-08-31; an earlier version of this file undercounted them.
 
 | Portainer stack | Deploys | Config file |
 |---|---|---|
-| 7 | jellyfin | `/data/compose/7/jellyfin/docker-compose.yml` |
-| 8 | servarr | `/data/compose/8/servarr/docker-compose.yml` |
-| 9 | homeassistant | `/data/compose/9/homeassistant/docker-compose.yaml` |
-| 1 | immich | standalone editor stack |
-| 6 | traefik | standalone editor stack |
-| 10 | beszel | standalone editor stack |
+| **7** | **jellyfin** | **git-backed** → `jellyfin/docker-compose.yml` |
+| **8** | **servarr** | **git-backed** → `servarr/docker-compose.yml` |
+| **9** | **homeassistant** | **git-backed** → `homeassistant/docker-compose.yaml` |
 | **11** | **minio** | **git-backed** → `minio/docker-compose.yaml` |
 | **12** | **n8n** | **git-backed** → `n8n/docker-compose.yml` |
+| **13** | **immich** | **git-backed** → `immich/docker-compose.yml` |
+| 6 | traefik | standalone editor stack |
+| 10 | beszel | standalone editor stack |
 
-So for stacks 1 and 6–10, **editing a file here changes nothing until the stack
-is re-uploaded or edited in Portainer.** Stacks 1, 6 and 10 have no copy here at
-all — their definitions live only in Portainer's own volume. Migrating the
-remaining ones to git-backed stacks is the obvious cleanup.
+Only **6 and 10** are left as editor stacks, and neither has a copy here at all
+— their definitions live only in Portainer's own volume, so editing this repo
+changes nothing for them.
+
+**Stack 1 no longer exists.** Immich was an editor stack until 2026-08-31.
+Portainer cannot convert one in place, so it was deleted and recreated as a
+git-backed stack, which allocated a **new id, 13**. The containers came back
+untouched: `docker compose down` without `-v` cannot touch a bind mount, and
+Portainer does not pass `-v`, so `/opt/stacks/immich/pgdata`, `/srv/immich` and
+the `immich_model-cache` volume all survived. Expect the same id change if 6 or
+10 are converted.
 
 The repo is **public**, so Portainer needs no credentials to pull it. That also
 means everything committed here is internet-readable — keep secrets in
@@ -551,6 +557,106 @@ created within 5 minutes of first start. Fix is to restart and POST to
 printed with ANSI colour codes around it, so strip them or the grep silently
 returns nothing.
 
+## Immich — the 1.120.2 → 3.1.0 upgrade, and why it took four deploys
+
+Done 2026-08-31. **Immich cannot be upgraded from 1.120.2 to v3 in one jump**,
+and both gates fail closed — the server refuses to start rather than corrupting
+anything, but you find out only after the pull.
+
+| Hop | Why it exists |
+|---|---|
+| → **1.132.3** | v1.137.0 removed TypeORM and refuses to migrate unless Immich has started at least once on **1.132.0–1.136.0**. Skipping it gives `Migrations failed: Error: Invalid upgrade path`. 1.132.3 is what `docs.immich.app/errors#typeorm-upgrade` names; **1.136.0 has a blocking bug** when coming from ≤1.131. |
+| → **2.7.5** | v1.133.0 moved off pgvecto.rs to VectorChord, and **v3 deleted the migration code**. v3 cannot convert pgvecto.rs data, so the conversion must run on a 1.133–2.x server. 2.7.5 is the last of those. |
+| → **3.1.0** | Ordinary bump once VectorChord is in place. |
+| → **/data** | Optional media-location move, kept separate on purpose. |
+
+Immich also refuses to upgrade **from below 1.107.2**, so a stale instance may
+need more hops than this.
+
+### The VectorChord migration is automatic here, and a one-way door
+
+`ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0` carries
+`vchord`, `vector` **and** `vectors` simultaneously, with
+`shared_preload_libraries = 'vchord.so, vectors.so'`. That is the precondition
+the migration guide asks for, and because the container connects as superuser
+Immich does the whole `CREATE EXTENSION` → reindex → `DROP EXTENSION` sequence
+itself. Watch for `Reindexed face_index` / `Reindexed clip_index`. **Do not
+restart during it.** At 8622 assets it took under two seconds; large libraries
+take tens of minutes and look hung.
+
+The image generates `/etc/postgresql/postgresql.conf` from a template at
+startup and passes it with `-c config_file=`, so **the `postgresql.conf` inside
+PGDATA is bypassed, not merged.** That is why the tensorchord leftovers there
+are harmless. Its entrypoint also reads `POSTGRES_PASSWORD_FILE` in
+`set-env.sh` **as root, before `gosu`**, so the secret file's ownership only has
+to satisfy root.
+
+Immich leaves the empty `vectors` **schema** behind after dropping the
+extension; `DROP SCHEMA vectors RESTRICT;` finishes the job. The template's
+`search_path` still names it, which is harmless — Postgres ignores missing
+schemas in `search_path`.
+
+**After this you can never run Immich below 1.133.0 against this database.**
+
+### `/data`, not `/usr/src/app/upload`
+
+v1.137.0 changed the default media location. It is genuinely optional — Immich
+prefers the legacy path whenever it exists — but this stack moved anyway.
+Immich detects the change and rewrites the stored paths itself:
+
+```
+Media location changed (from=/usr/src/app/upload, to=/data)
+```
+
+It rewrote **27456** absolute paths across `asset.originalPath` (8622),
+`asset_file.path` (18617) and `person.thumbnailPath` (217). Reverting is the
+same mechanism in reverse, not a restore. This was safe here because the stack
+has a **single** mount; installs that split out `ENCODED_VIDEO_LOCATION` and
+moved only one of them ended up with broken transcoded video.
+
+Note the paths were *relative* (`upload/library/…`) on 1.120.2 and *absolute*
+by 3.1.0 — something in between rewrote them, so do not assume the shape.
+
+### GPU — new, and it never worked before
+
+Immich had **never** used the RTX 3060. The compose file in this repo carried an
+nvidia device reservation, but that file was never deployed (stack 1 was an
+editor stack), and the plain `immich-machine-learning` image is CPU-only ONNX
+anyway — the reservation would have handed it a device it had no runtime for.
+
+Now `immich-machine-learning:<ver>-cuda` with a gpu reservation, and NVENC on
+the server via `capabilities: [gpu, compute, video]`, both inlined from
+upstream's `hwaccel.*.yml` so Portainer still deploys a single file. Verified
+inside the containers: `CUDAExecutionProvider` + `TensorrtExecutionProvider`
+available, and `h264_nvenc`/`hevc_nvenc`/`av1_nvenc` present. **No `/dev/dri`**,
+same as Jellyfin — NVENC goes through the driver, not DRM, which matters here
+because `nvidia_drm` has no modeset and `/dev/dri` does not exist in VM 100.
+
+**The compose only grants the device.** Hardware transcoding still has to be
+switched to NVENC in Immich's admin settings.
+
+### Backups taken, and what they are good for
+
+In `/opt/stacks/immich/backup/`, mode 600, `pg_dumpall --clean --if-exists`:
+`immich-pre-v3.sql` (1.120.2), `immich-1.132.3-pre-vectorchord.sql`,
+`immich-3.1.0-pre-datamove.sql`. The first two are **unrestorable in practice** —
+no server that can read them will ever run against this database again — so they
+are evidence, not rollback. Delete them once v3 is trusted.
+
+Proxmox snapshot `pre-immich-v3` on VM 100, **disk-only** (`hostpci0` rules out
+vmstate). It covers `/opt/stacks/immich/pgdata` and nothing under `/srv/immich`,
+because the library is virtiofs from `tank` and lives outside the VM disk. That
+is the right shape for a DB rollback and useless as a library backup — see open
+item 1.
+
+### Not applicable to this install, but check on the next major
+
+v3's other breaking changes: removed API endpoints and renamed DTO fields (no
+third-party API consumers here), `MACHINE_LEARNING_PRELOAD__*` and
+`IMMICH_MACHINE_LEARNING_PING_TIMEOUT` removal (never set), OAuth insecure-HTTP
+now blocked (no OAuth), and an x86-64-v2 CPU floor (met by a Ryzen 5 5600 as
+`cpu: host`).
+
 ## Snapshots
 
 `pre-desktop`, `pre-driver-upgrade`, `desktop-working`. The last is the good
@@ -881,22 +987,33 @@ forward, which is why nothing could issue before the cutover.
 
 1. **Off-site backup of the photo library.** The mirror is not a backup. This
    is the largest remaining risk.
-2. **`excalidraw` is the last of yours still in the DMZ.** Same recipe as the
+2. **Immich post-upgrade, in the web UI** — the compose file cannot do either:
+   - Admin → Video Transcoding → **Hardware Acceleration = NVENC**. The
+     container has the device; nothing uses it until this is set.
+   - Re-run the **Metadata Extraction** job over pre-v3 assets, per the v3
+     migration guide.
+3. **`excalidraw` is the last of yours still in the DMZ.** Same recipe as the
    minio/n8n move: stop on VM 200 → copy `/opt/appdata/excalidash` →
    `/opt/stacks/excalidraw/prisma` on VM 100 → add a route to `homelab.yml` →
    drop the AdGuard `.200` override. Low urgency: it holds only drawings.
-3. **Rotate** the Anthropic key, Turso token and MinIO root credentials — they
+4. **Rotate** the Anthropic key, Turso token and MinIO root credentials — they
    sat on the DMZ VM for a week.
-4. **Migrate stacks 1 and 6–10 to git-backed** Portainer stacks so this repo is
-   the single source of truth for all of them, as 11 and 12 now are.
-3. **WireGuard** — UDP 51820 forward not yet configured. No remote access
+5. **Migrate stacks 6 (traefik) and 10 (beszel) to git-backed** Portainer
+   stacks — the last two that are not. Neither has a compose file in this repo
+   yet, so each needs writing out first. Note that traefik's stack carries the
+   Cloudflare token via a bind-mounted secret file, which is what makes it
+   safe to move into a public repo; use the same `_FILE` pattern immich now
+   uses. Converting reallocates the stack id (immich went 1 → 13).
+6. **WireGuard** — UDP 51820 forward not yet configured. No remote access
    except through the public services.
-5. **Dormant stacks** carry stale `*.treble.bg` labels and `tlsresolver`. Fix
+7. **Dormant stacks** carry stale `*.treble.bg` labels and `tlsresolver`. Fix
    before deploying any.
-6. Dokploy cleanup schedule, per-app memory/CPU limits, S3 database backups.
-7. `rpool/immich` holds ~2.2 G of orphaned data from the aborted WiFi rsync.
-8. Later: second node + QDevice for quorum. Note the mirror protects against a
-   *drive* failure, not a *host* failure.
+8. Dokploy cleanup schedule, per-app memory/CPU limits, S3 database backups.
+9. `rpool/immich` holds ~2.2 G of orphaned data from the aborted WiFi rsync.
+10. Delete Proxmox snapshot `pre-immich-v3` on VM 100 and the two unrestorable
+    dumps in `/opt/stacks/immich/backup/` once v3.1.0 is trusted.
+11. Later: second node + QDevice for quorum. Note the mirror protects against a
+    *drive* failure, not a *host* failure.
 
 # Working agreements
 
