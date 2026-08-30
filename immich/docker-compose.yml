@@ -23,12 +23,9 @@ name: immich
 services:
   immich-server:
     container_name: immich_server
-    # MANDATORY WAY-POINT on the road to v3, not a destination. v1.137.0 removed
-    # TypeORM and refuses to migrate unless Immich has started at least once on
-    # 1.132.0-1.136.0; skipping this gives "Migrations failed: Error: Invalid
-    # upgrade path". 1.132.3 is the version the error page names - 1.136.0 has a
-    # blocking bug when coming from <=1.131.
-    image: ghcr.io/immich-app/immich-server:v1.132.3
+    # SECOND WAY-POINT. The TypeORM gate (1.132.3) is behind us; this stop
+    # exists to run the pgvecto.rs -> VectorChord migration, which v3 deleted.
+    image: ghcr.io/immich-app/immich-server:v2.7.5
     restart: always
     ports:
       - 2283:2283
@@ -59,20 +56,36 @@ services:
 
   immich-machine-learning:
     container_name: immich_machine_learning
-    image: ghcr.io/immich-app/immich-machine-learning:v1.132.3
+    image: ghcr.io/immich-app/immich-machine-learning:v2.7.5
     restart: always
     volumes:
       - model-cache:/cache
 
   redis:
     container_name: immich_redis
-    image: redis:6.2-alpine
+    # Valkey, per upstream. Immich only uses this as a BullMQ queue and it has
+    # no volume, so the swap costs nothing but in-flight jobs, which requeue.
+    image: docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
     restart: always
+    healthcheck:
+      test: redis-cli ping || exit 1
 
   database:
     container_name: immich_postgres
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    # Immich's own Postgres, and the whole reason this deploy is separate. It
+    # ships vchord (VectorChord), vector (pgvector) AND vectors (pgvecto.rs) at
+    # once, with shared_preload_libraries = 'vchord.so, vectors.so' baked into
+    # /etc/postgresql/postgresql.conf. Both extensions loaded simultaneously is
+    # exactly the precondition the migration guide asks for, and because this
+    # container is superuser the reindex needs no manual SQL.
+    #
+    # Still PostgreSQL 14 (14.19 vs the 14.17 we were on), so the data directory
+    # is used in place - no dump/restore, no pg_upgrade.
+    #
+    # Digest-pinned: the tag itself moves.
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     restart: always
+    shm_size: 128mb
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=immich
