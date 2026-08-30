@@ -11,7 +11,7 @@ name: immich
 # exists before collapsing them.
 #
 # TWO STORAGE TIERS, and the split is not negotiable:
-#   /srv/immich                 -> tank/immich (ZFS mirror) via virtiofs. Bulk
+#   /srv/immich  -> /data       -> tank/immich (ZFS mirror) via virtiofs. Bulk
 #                                  media only. 124 G, irreplaceable.
 #   /opt/stacks/immich/pgdata   -> VM 100's own zvol (ext4 on NVMe). NEVER put
 #                                  Postgres on virtiofs - locking corruption.
@@ -35,7 +35,18 @@ services:
     ports:
       - 2283:2283
     volumes:
-      - /srv/immich:/usr/src/app/upload
+      # /data, not the old /usr/src/app/upload. Upstream changed the default in
+      # v1.137.0 and Immich still prefers the legacy path when it exists, so this
+      # is a choice, not a requirement - made now so we stop depending on a
+      # backwards-compatibility branch that will not live forever.
+      #
+      # Immich detects the move and rewrites the stored paths itself. There are
+      # 27456 of them across asset.originalPath, asset_file.path,
+      # person.thumbnailPath and user.profileImagePath, all currently absolute
+      # and prefixed /usr/src/app/upload. Nothing on the host side moves:
+      # /srv/immich already contains library/, upload/, thumbs/, encoded-video/,
+      # profile/ and backups/, which is the layout /data expects.
+      - /srv/immich:/data
       - /etc/localtime:/etc/localtime:ro
       - /opt/stacks/immich/secrets/db_password:/run/secrets/db_password:ro
     environment:
