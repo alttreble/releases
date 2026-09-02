@@ -1,0 +1,20 @@
+
+services:
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome:2026.8.2
+    # Host networking is load-bearing, not cosmetic. ESPHome needs mDNS to find
+    # the satellite and to push OTA builds once the ESP32 is off the USB cable;
+    # a bridge network breaks both silently. It is also why this stack carries
+    # no Traefik labels — the docker provider needs the container on `proxy`,
+    # which host mode precludes. Route it from traefik/dynamic/homelab.yml
+    # (http://192.168.1.100:6052) if a name is ever wanted.
+    network_mode: host
+    volumes:
+      - /opt/stacks/esphome/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Europe/Sofia
+      # The builder only ever compiles; it stores no state worth a healthcheck.
+      - ESPHOME_DASHBOARD_USE_PING=true
+    restart: unless-stopped

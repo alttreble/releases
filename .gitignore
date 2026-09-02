@@ -1,3 +1,6 @@
 **/.env
 api_key
 *.key
+
+# ESPHome device secrets (wifi, OTA password, HA API key)
+secrets.yaml

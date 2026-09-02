@@ -1,0 +1,66 @@
+# =============================================================================
+# reSpeaker XVF3800 + XIAO ESP32-S3 — voice satellite, wake word "Patrick"
+#
+# This file is the device definition, NOT part of the Portainer stack. Copy it
+# to /opt/stacks/esphome/config/ on VM 100 (alongside secrets.yaml) and build
+# it from the ESPHome UI at http://192.168.1.100:6052.
+#
+# Nearly everything comes from formatBCE's packages. They carry the patched
+# i2s_audio component and the XVF3800 driver — the stock ESPHome i2s_audio does
+# not work with this board, because the mic array needs a 12.288 MHz MCLK that
+# ESPHome cannot generate. The package firmware makes the XVF3800 the I2S master
+# instead, and flashes itself over I2C from the ESP32 on first boot. There is no
+# separate DFU step from a laptop.
+# =============================================================================
+
+substitutions:
+  name: respeaker-patrick
+  friendly_name: Patrick
+
+  # Pin this to a tag or commit once the device is known-good. `main` tracks
+  # upstream, and the YAML packages and the C++ components must agree, so this
+  # one value selects both.
+  respeaker_ref: main
+
+  # The wake word model. See README.md — this file has to be trained and placed
+  # at /opt/stacks/esphome/config/models/patrick.json before a build succeeds.
+  # To get a bootable device before then, set this to: hey_jarvis
+  wake_word_model: /config/models/patrick.json
+
+packages:
+  respeaker:
+    url: https://github.com/formatBCE/Respeaker-XVF3800-ESPHome-integration
+    ref: ${respeaker_ref}
+    refresh: 1d
+    files:
+      - packages/base.yaml
+      - packages/hardware.yaml
+      - packages/voice-assistant.yaml
+      - packages/leds.yaml
+      - packages/timers-alarm.yaml
+
+# A remote package cannot read secrets, so the credentials go here. ESPHome
+# merges these blocks with the ones the packages define.
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+    password: !secret ota_password
+
+# Adds "Patrick" alongside the three models the package ships (okay_nabu,
+# hey_jarvis, hey_mycroft). ESPHome merges package lists by appending, so this
+# does not replace them — all four stay live, and the package's "Wake word
+# sensitivity" select only tunes its own three. Removing the stock ones needs a
+# fork of packages/voice-assistant.yaml; leaving them costs a little PSRAM and
+# means the satellite also answers to "okay nabu".
+micro_wake_word:
+  models:
+    - model: ${wake_word_model}
+      id: patrick
