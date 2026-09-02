@@ -493,6 +493,27 @@ flashed.
   master and flashes itself over I2C on first boot. There is no laptop-side DFU
   step, and GPIO9 MCLK must stay disabled.
 
+### Two things that cost time bringing it up (2026-09-02)
+
+- **`internal_url` must be set, or the satellite cannot fetch TTS audio.** HA had
+  only `external_url: https://ha.tedraykov.me`, so it handed the ESP32 its
+  *public* URL: a hairpin out to the router, back through the DMZ Traefik, with
+  Let's Encrypt certificate validation on a microcontroller. HA reports this as
+  *"The voice assistant is unable to connect to Home Assistant."* Fix:
+  Settings → System → Network → Local network → **`http://192.168.1.100:8123`**.
+  Plain HTTP, straight to VM 100, DMZ out of the audio path entirely. Leave
+  `external_url` alone.
+- **"Installation of apps is not supported on your system" is expected.** That
+  is HA's Assist wizard offering to auto-install Whisper/Piper **add-ons**,
+  which needs HAOS or Supervised. This is the plain container — no Supervisor,
+  no add-ons. Not a fault, and not needed: ElevenLabs provides both halves.
+  Same root cause as the ESPHome builder having to be its own stack.
+- Adoption gotchas: the device is at its **own** IP (`192.168.1.28`, MAC
+  `68ee8f46c544`), not `esphome.tedraykov.me` (that is the builder on VM 100)
+  and not `192.168.1.100`. The encryption key is `api_key` from
+  `/opt/stacks/esphome/config/secrets.yaml` — paste it whole, trailing `=`
+  included.
+
 **⚠ Not finished: the "Patrick" wake word does not exist yet.** The stock
 micro_wake_word catalogue is `okay_nabu`, `hey_jarvis`, `hey_mycroft`, `stop` —
 that is the whole list. The model must be trained (microwakeword.com) and
