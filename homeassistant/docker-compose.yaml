@@ -5,6 +5,12 @@ services:
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
       - /opt/stacks/homeassistant/config:/config
+      # Camera clips written by camera.record. /media is HA's default media dir,
+      # so it needs no allowlist_external_dirs entry and shows up in the media
+      # browser. Bulk data, so it belongs on tank (virtiofs) and not on the
+      # VM's zvol — and without this mount the clips would live in the
+      # container layer and vanish on every Portainer redeploy.
+      - /srv/media/camera:/media
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     networks:
