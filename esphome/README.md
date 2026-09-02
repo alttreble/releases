@@ -85,8 +85,20 @@ Note "Patrick" is a two-syllable, plosive-initial word — short wake words draw
 more false accepts than three-syllable ones like "okay nabu". Expect to tune
 `probability_cutoff` upward if it fires at the television.
 
-To get a working satellite before the model is trained, set
-`wake_word_model: hey_jarvis` in `respeaker-patrick.yaml` and rebuild.
+**Meanwhile the satellite ships with the package's own wake words** —
+`okay_nabu`, `kenobi`, `hey_jarvis`, `hey_mycroft`. Use **"hey jarvis"**. The
+`micro_wake_word` block at the bottom of `respeaker-patrick.yaml` is commented
+out; uncomment it once `patrick.json` exists and push it over OTA — no USB, no
+re-adoption in HA.
+
+**Do not bridge the gap by pointing that block at a stock model.** The package
+already defines `hey_jarvis` under its own id, so a second entry loading the
+same model as `patrick` runs the detector twice: wasted PSRAM, and both fire on
+one utterance, which surfaces as `duplicate_wake_up_detected`.
+
+The device keeps the name "Patrick" throughout. The wake word is separate from
+the device identity, and renaming after adoption would churn every HA entity
+id.
 
 ## First flash
 

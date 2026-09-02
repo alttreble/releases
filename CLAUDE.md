@@ -1044,10 +1044,12 @@ forward, which is why nothing could issue before the cutover.
 
 1. **Off-site backup of the photo library.** The mirror is not a backup. This
    is the largest remaining risk.
-2. **Train the "Patrick" wake word model.** The voice satellite cannot build
-   until `models/patrick.json` exists on VM 100 — no such model ships with
-   micro_wake_word. See `esphome/README.md`. The satellite also still needs its
-   `secrets.yaml` (WiFi, OTA password, HA API key) and a first USB flash.
+2. **Train the "Patrick" wake word model.** No such model ships with
+   micro_wake_word, so the satellite runs `hey_jarvis` meanwhile. Train it (see
+   `esphome/README.md`), drop `patrick.json` + `patrick.tflite` in
+   `/opt/stacks/esphome/config/models/`, repoint `wake_word_model`, and push it
+   over OTA. `secrets.yaml` is complete and the config validates; what remains
+   is the first USB flash and adoption in HA.
 3. **Immich post-upgrade, in the web UI** — the compose file cannot do either:
    - Admin → Video Transcoding → **Hardware Acceleration = NVENC**. The
      container has the device; nothing uses it until this is set.

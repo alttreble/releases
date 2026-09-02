@@ -22,10 +22,6 @@ substitutions:
   # one value selects both.
   respeaker_ref: main
 
-  # The wake word model. See README.md — this file has to be trained and placed
-  # at /opt/stacks/esphome/config/models/patrick.json before a build succeeds.
-  # To get a bootable device before then, set this to: hey_jarvis
-  wake_word_model: /config/models/patrick.json
 
 packages:
   respeaker:
@@ -54,13 +50,22 @@ ota:
     id: ota_esphome
     password: !secret ota_password
 
-# Adds "Patrick" alongside the three models the package ships (okay_nabu,
-# hey_jarvis, hey_mycroft). ESPHome merges package lists by appending, so this
-# does not replace them — all four stay live, and the package's "Wake word
-# sensitivity" select only tunes its own three. Removing the stock ones needs a
-# fork of packages/voice-assistant.yaml; leaving them costs a little PSRAM and
-# means the satellite also answers to "okay nabu".
-micro_wake_word:
-  models:
-    - model: ${wake_word_model}
-      id: patrick
+# "Patrick" is not a model that exists yet — it has to be trained (see
+# README.md). Until then this stays commented out and the satellite answers to
+# the wake words the package already ships: okay_nabu, kenobi, hey_jarvis,
+# hey_mycroft. "hey jarvis" is the one to use meanwhile.
+#
+# Do NOT bridge the gap by pointing this at a stock model. The package already
+# defines hey_jarvis with its own id, and a second entry loading the same model
+# under id "patrick" runs the detector twice — wasted PSRAM, and both fire on
+# one utterance, which the package reports as duplicate_wake_up_detected.
+#
+# When models/patrick.json exists, uncomment this and push it over OTA. ESPHome
+# merges package lists by appending, so it adds Patrick rather than replacing
+# the stock words, and the package's "Wake word sensitivity" select goes on
+# tuning only its own three.
+#
+# micro_wake_word:
+#   models:
+#     - model: /config/models/patrick.json
+#       id: patrick
