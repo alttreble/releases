@@ -112,6 +112,7 @@ consumer edits.
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
 | `minio` | **live on VM 100** | S3 object storage. Git-backed Portainer stack 11. |
 | `n8n` | **live on VM 100** | Git-backed Portainer stack 12. |
+| `esphome` | **live on VM 100** | Device builder for the voice satellite. Git-backed Portainer stack 14. Host networking, LAN only. |
 | `excalidraw` | live on **VM 200** | **Dokploy-managed, git-sourced from this repo.** Container/data are named `excalidash`. |
 | `minecraft` `monitoring` `plex` | **dormant** | not deployed. Data still at `/mnt/archive/config/*` and `/mnt/archive/data/*` if wanted. |
 
@@ -130,7 +131,7 @@ router. **Fix the labels before deploying any of them.**
 
 ## How this repo reaches the running containers
 
-**Mostly git-backed now.** Six of the eight stacks pull from
+**Mostly git-backed now.** Seven of the nine stacks pull from
 `https://github.com/alttreble/releases` (`refs/heads/trunk`) — edit here, push,
 then redeploy and the change lands. Verified against the Portainer API on
 2026-08-31; an earlier version of this file undercounted them.
@@ -143,6 +144,7 @@ then redeploy and the change lands. Verified against the Portainer API on
 | **11** | **minio** | **git-backed** → `minio/docker-compose.yaml` |
 | **12** | **n8n** | **git-backed** → `n8n/docker-compose.yml` |
 | **13** | **immich** | **git-backed** → `immich/docker-compose.yml` |
+| **14** | **esphome** | **git-backed** → `esphome/docker-compose.yml` |
 | 6 | traefik | standalone editor stack |
 | 10 | beszel | standalone editor stack |
 
@@ -443,6 +445,48 @@ file wins.
 
 **If HA ignores a YAML setting, check `.storage/` before debugging the YAML.**
 Backup: `.storage/http.bak-sof1`.
+
+## Voice assistant — reSpeaker XVF3800 satellite (started 2026-09-02)
+
+A **reSpeaker XVF3800 with an onboard XIAO ESP32-S3**, wake word **"Patrick"**.
+It is an ESPHome device on WiFi, *not* a USB microphone — nothing is passed
+through from the host, and it never touches virtiofs or the Proxmox USB map.
+
+**The pipeline is ElevenLabs for both halves.** The official HA integration does
+STT *and* TTS, so there is no `wyoming-whisper` and no `wyoming-piper` here —
+nothing local, no GPU reservation, no RAM on a VM with ~3.7 GiB free. Wake word
+detection is the one local piece and runs on the ESP32-S3 itself, so no
+`openWakeWord` either. The cost is that every utterance leaves the house and
+draws ElevenLabs quota; if that bites, move STT to a local `faster-whisper` on
+the 3060 and keep ElevenLabs for TTS — STT is the expensive half by volume.
+
+**The ESPHome Device Builder had to become a container** (stack 14). Every guide
+for this board says "Settings → Add-ons → ESPHome Device Builder", and **this HA
+install has no add-on store** — it is the plain image, not HAOS or Supervised.
+The *integration* that talks to the finished device is in HA core and needs none
+of it; the builder is only a compiler and can be stopped once a device is
+flashed.
+
+- Host networking is required for mDNS discovery and OTA, which is also why the
+  stack carries **no Traefik labels** — the docker provider needs the container
+  on `proxy`, and host mode precludes that. LAN only at
+  **http://192.168.1.100:6052**, and it should stay that way: it compiles and
+  flashes arbitrary firmware, so it must never reach the DMZ allowlist.
+- **The device YAML is not deployed by the stack.** Portainer clones this repo
+  to its own directory while the builder reads `/opt/stacks/esphome/config`.
+  `esphome/respeaker-patrick.yaml` is copied there by hand, next to a
+  gitignored `secrets.yaml`.
+- The board needs formatBCE's ESPHome packages — the **stock `i2s_audio`
+  component does not work** with it. The array needs a 12.288 MHz MCLK that
+  ESPHome cannot generate, so the package firmware makes the XVF3800 the I2S
+  master and flashes itself over I2C on first boot. There is no laptop-side DFU
+  step, and GPIO9 MCLK must stay disabled.
+
+**⚠ Not finished: the "Patrick" wake word does not exist yet.** The stock
+micro_wake_word catalogue is `okay_nabu`, `hey_jarvis`, `hey_mycroft`, `stop` —
+that is the whole list. The model must be trained (microwakeword.com) and
+dropped at `/opt/stacks/esphome/config/models/patrick.json`, or the build fails.
+`esphome/README.md` carries the procedure and the fallback.
 
 ---
 
@@ -989,32 +1033,38 @@ forward, which is why nothing could issue before the cutover.
 
 1. **Off-site backup of the photo library.** The mirror is not a backup. This
    is the largest remaining risk.
-2. **Immich post-upgrade, in the web UI** — the compose file cannot do either:
+2. **Train the "Patrick" wake word model.** The voice satellite cannot build
+   until `models/patrick.json` exists on VM 100 — no such model ships with
+   micro_wake_word. See `esphome/README.md`. The satellite also still needs its
+   `secrets.yaml` (WiFi, OTA password, HA API key) and a first USB flash.
+3. **Immich post-upgrade, in the web UI** — the compose file cannot do either:
    - Admin → Video Transcoding → **Hardware Acceleration = NVENC**. The
      container has the device; nothing uses it until this is set.
    - Re-run the **Metadata Extraction** job over pre-v3 assets, per the v3
      migration guide.
-3. **`excalidraw` is the last of yours still in the DMZ.** Same recipe as the
+4. **`excalidraw` is the last of yours still in the DMZ.** Same recipe as the
    minio/n8n move: stop on VM 200 → copy `/opt/appdata/excalidash` →
    `/opt/stacks/excalidraw/prisma` on VM 100 → add a route to `homelab.yml` →
    drop the AdGuard `.200` override. Low urgency: it holds only drawings.
-4. **Rotate** the Anthropic key, Turso token and MinIO root credentials — they
+5. **Rotate** the Anthropic key, Turso token and MinIO root credentials — they
    sat on the DMZ VM for a week.
-5. **Migrate stacks 6 (traefik) and 10 (beszel) to git-backed** Portainer
-   stacks — the last two that are not. Neither has a compose file in this repo
-   yet, so each needs writing out first. Note that traefik's stack carries the
+6. **Migrate stacks 6 (traefik) and 10 (beszel) to git-backed** Portainer
+   stacks — the last two that are not. `beszel/` now has a compose file here,
+   so it only needs converting; traefik still needs one written out. Editing
+   this repo changes nothing for either until they are converted. Note that
+   traefik's stack carries the
    Cloudflare token via a bind-mounted secret file, which is what makes it
    safe to move into a public repo; use the same `_FILE` pattern immich now
    uses. Converting reallocates the stack id (immich went 1 → 13).
-6. **WireGuard** — UDP 51820 forward not yet configured. No remote access
+7. **WireGuard** — UDP 51820 forward not yet configured. No remote access
    except through the public services.
-7. **Dormant stacks** carry stale `*.treble.bg` labels and `tlsresolver`. Fix
+8. **Dormant stacks** carry stale `*.treble.bg` labels and `tlsresolver`. Fix
    before deploying any.
-8. Dokploy cleanup schedule, per-app memory/CPU limits, S3 database backups.
-9. `rpool/immich` holds ~2.2 G of orphaned data from the aborted WiFi rsync.
-10. Delete Proxmox snapshot `pre-immich-v3` on VM 100 and the two unrestorable
+9. Dokploy cleanup schedule, per-app memory/CPU limits, S3 database backups.
+10. `rpool/immich` holds ~2.2 G of orphaned data from the aborted WiFi rsync.
+11. Delete Proxmox snapshot `pre-immich-v3` on VM 100 and the two unrestorable
     dumps in `/opt/stacks/immich/backup/` once v3.1.0 is trusted.
-11. Later: second node + QDevice for quorum. Note the mirror protects against a
+12. Later: second node + QDevice for quorum. Note the mirror protects against a
     *drive* failure, not a *host* failure.
 
 # Working agreements
