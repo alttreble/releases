@@ -16,9 +16,26 @@ into HA core and needs none of this. The builder is only a compiler; once the
 device is flashed and adopted, this container can be stopped without affecting
 the satellite.
 
-UI: **http://192.168.1.100:6052** — LAN only, deliberately. It compiles and
-flashes arbitrary firmware, so it is not routed through Traefik and must never
-reach the DMZ allowlist.
+UI: **https://esphome.tedraykov.me**, or `http://192.168.1.100:6052` directly.
+
+**Private, not public** — the name resolves to `192.168.1.100` for LAN clients
+via AdGuard's `*.tedraykov.me` wildcard rewrite, and the route is a file-provider
+entry in `traefik/dynamic/homelab.yml` (host networking means Traefik's docker
+provider cannot see the container, so labels are not an option). No Cloudflare
+record was needed: the zone holds one wildcard `A` already. No DMZ firewall hole
+exists for port 6052, so it is not reachable from the internet.
+
+**It must stay that way unless auth is verified working**, because the builder
+ships with **no authentication at all**. `ESPHOME_USERNAME` / `ESPHOME_PASSWORD`
+are set as Portainer stack variables — never committed, this repo is public —
+and the compose uses a `:?` guard so a missing value fails the deploy instead of
+quietly starting an open dashboard. Credentials are at
+`/opt/stacks/esphome/.admin-credentials` on VM 100, mode 600.
+
+`ESPHOME_TRUSTED_DOMAINS` pins the websocket Origin/Host allowlist that the
+whole UI rides on. `normalize_host()` strips the port, so
+`esphome.tedraykov.me,192.168.1.100` covers both the proxied name and direct
+`:6052` access. Leaving it unset disables the check entirely.
 
 ## The voice pipeline — ElevenLabs, not Whisper/Piper
 

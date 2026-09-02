@@ -467,11 +467,22 @@ The *integration* that talks to the finished device is in HA core and needs none
 of it; the builder is only a compiler and can be stopped once a device is
 flashed.
 
-- Host networking is required for mDNS discovery and OTA, which is also why the
-  stack carries **no Traefik labels** — the docker provider needs the container
-  on `proxy`, and host mode precludes that. LAN only at
-  **http://192.168.1.100:6052**, and it should stay that way: it compiles and
-  flashes arbitrary firmware, so it must never reach the DMZ allowlist.
+- **https://esphome.tedraykov.me — private, and authenticated.** Host networking
+  means Traefik's docker provider cannot see the container, so the route is a
+  file-provider entry in `homelab.yml`, not labels. **No DNS record was needed**
+  — the zone is a single wildcard and AdGuard's `*.tedraykov.me → 192.168.1.100`
+  rewrite already covers the name. There is **no DMZ hole for 6052**, so it is
+  not internet-reachable, unlike the rest of the lab.
+- **The builder ships with no authentication whatsoever** — that is why it is
+  the one exception to "everything public". `ESPHOME_USERNAME`/`ESPHOME_PASSWORD`
+  are **Portainer stack variables** (this repo is public), and the compose uses a
+  `:?` guard so a missing value fails the deploy rather than silently starting an
+  open dashboard that can flash arbitrary firmware. Credentials:
+  `/opt/stacks/esphome/.admin-credentials`, mode 600.
+  `ESPHOME_TRUSTED_DOMAINS` pins the websocket Origin/Host allowlist the UI rides
+  on; `normalize_host()` strips the port, so the name plus `192.168.1.100` covers
+  both paths. Unset disables the check.
+- Route backup: `/opt/stacks/traefik/dynamic/homelab.yml.bak-preesphome`.
 - **The device YAML is not deployed by the stack.** Portainer clones this repo
   to its own directory while the builder reads `/opt/stacks/esphome/config`.
   `esphome/respeaker-patrick.yaml` is copied there by hand, next to a

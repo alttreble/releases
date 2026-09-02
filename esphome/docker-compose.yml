@@ -3,18 +3,29 @@ services:
   esphome:
     container_name: esphome
     image: ghcr.io/esphome/esphome:2026.8.2
-    # Host networking is load-bearing, not cosmetic. ESPHome needs mDNS to find
-    # the satellite and to push OTA builds once the ESP32 is off the USB cable;
-    # a bridge network breaks both silently. It is also why this stack carries
-    # no Traefik labels — the docker provider needs the container on `proxy`,
-    # which host mode precludes. Route it from traefik/dynamic/homelab.yml
-    # (http://192.168.1.100:6052) if a name is ever wanted.
+    # Host networking is load-bearing: ESPHome needs mDNS to find the satellite
+    # and to push OTA builds once the ESP32 is off the USB cable, and a bridge
+    # network breaks both silently. It does mean Traefik's docker provider
+    # cannot see this container, so the route is a file-provider entry in
+    # traefik/dynamic/homelab.yml instead of labels here. That is a routing
+    # mechanism, not a restriction — esphome.tedraykov.me is served normally.
     network_mode: host
     volumes:
       - /opt/stacks/esphome/config:/config
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Europe/Sofia
-      # The builder only ever compiles; it stores no state worth a healthcheck.
       - ESPHOME_DASHBOARD_USE_PING=true
+      # Auth is not optional. The builder ships with NO authentication of any
+      # kind, and it compiles and flashes arbitrary firmware and edits files
+      # under /config. Credentials come from Portainer stack variables and are
+      # never committed — this repo is public. The `:?` guard fails the deploy
+      # rather than silently starting an open dashboard.
+      - ESPHOME_USERNAME=${ESPHOME_USERNAME:?set as a Portainer stack variable}
+      - ESPHOME_PASSWORD=${ESPHOME_PASSWORD:?set as a Portainer stack variable}
+      # Origin/Host allowlist for the websocket handshake, which the whole UI
+      # rides on. normalize_host() strips the port, so these two entries cover
+      # both the proxied name and direct LAN access on :6052. An empty value
+      # disables the check altogether, so leave it set.
+      - ESPHOME_TRUSTED_DOMAINS=esphome.tedraykov.me,192.168.1.100
     restart: unless-stopped
