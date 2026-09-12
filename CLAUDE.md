@@ -110,6 +110,7 @@ consumer edits.
 | `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, overseerr, flaresolverr |
 | `traefik` | **live on VM 100** | v3.7, wildcard cert |
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
+| `samba` | **live on VM 100** | SMB for macOS Finder. Hand-deployed from `/opt/stacks/samba`, **not** a Portainer stack — the image can only take its account from `ACCOUNT_teo`, and this repo is public. LAN + Tailscale only. |
 | `minio` | **live on VM 100** | S3 object storage. Git-backed Portainer stack 11. |
 | `n8n` | **live on VM 100** | Git-backed Portainer stack 12. |
 | `esphome` | **live on VM 100** | Device builder for the voice satellite. Git-backed Portainer stack 14. Host networking, LAN only. |
@@ -556,6 +557,28 @@ runs as root exactly as it did on `sof1`, no `user:` override needed. Match
 **Hardlinks work through virtiofs** — verified same-inode, `links=2` between
 `/data/torrents` and `/data/media`. The whole \*arr import pipeline depends on
 this. **Do not split those two across devices.**
+
+**Extended attributes do NOT work** — `user.*` xattrs on `/srv/media` fail with
+`ENOTSUP`, while the same write succeeds on VM 100's own disk. Proxmox spawns
+`virtiofsd` without `--xattr` unless the device carries **`expose-xattr=1`**
+(`/usr/share/perl5/PVE/QemuServer/Virtiofs.pm`; `expose-acl=1` implies it).
+The datasets themselves are fine — `tank/media` is already `xattr=sa`,
+`acltype=posix` — so this is purely the virtiofs device config.
+
+This is why the `samba` stack overrides the image's `streams_xattr` /
+`fruit:metadata = stream` defaults to the AppleDouble fallback. Enabling it is
+`qm set 100 -virtiofs1 dirid=media,expose-xattr=1` **plus a VM 100 stop/start**
+— `virtiofsd` is forked by the VM start task, so a guest reboot will not
+respawn it with new flags.
+
+**Measured cost of the virtiofs hop:** 4 GiB cold sequential read, 246 MB/s on
+the host vs **223 MB/s** in the guest — about 9%. It has never been the
+bottleneck. End-to-end SMB from the MacBook is **45 MB/s** on 802.11ax 5 GHz
+(80 MHz, 864 Mbps PHY), so even on good Wi-Fi the link is still ~5x slower
+than the virtiofs path. It was **8.9 MB/s** while the Mac sat on the 2.4 GHz
+SSID (802.11n, 20 MHz, 144 Mbps PHY) — a 5x swing from the band alone, which
+dwarfs anything gained by moving Samba to the host. **Check the Wi-Fi band
+before optimising storage.**
 
 ## GPU
 
@@ -1090,8 +1113,13 @@ forward, which is why nothing could issue before the cutover.
    Cloudflare token via a bind-mounted secret file, which is what makes it
    safe to move into a public repo; use the same `_FILE` pattern immich now
    uses. Converting reallocates the stack id (immich went 1 → 13).
-7. **WireGuard** — UDP 51820 forward not yet configured. No remote access
-   except through the public services.
+7. **Remote access is Tailscale, not WireGuard.** `tailscale` 1.102.4 is
+   installed and up on VM 100 (`homelab` = `100.126.144.49`,
+   `homelab.tail9e59c0.ts.net`), with the MacBook on the same tailnet and
+   `CorpDNS = False` so MagicDNS cannot fight the AdGuard split-horizon setup.
+   SMB over it is verified. UDP 51820 was never forwarded and no longer needs
+   to be. Not advertising `192.168.1.0/24` as a subnet route — deliberate, it
+   would put the whole trusted LAN on the tailnet.
 8. **Dormant stacks** carry stale `*.treble.bg` labels and `tlsresolver`. Fix
    before deploying any.
 9. Dokploy cleanup schedule, per-app memory/CPU limits, S3 database backups.

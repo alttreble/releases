@@ -1,0 +1,105 @@
+name: samba
+
+# SMB/CIFS, so macOS Finder can mount tank/media directly.
+#
+# WHY SMB AND NOT NFS: macOS dropped AFP, and Finder's NFS client has no auth,
+# no Keychain integration and no uid mapping worth the name. SMB3 is the native
+# path on macOS - it authenticates, survives sleep/wake, and this image's base
+# smb.conf already carries the vfs_fruit block (catia fruit streams_xattr,
+# fruit:metadata = stream) that stops Finder littering ._ AppleDouble files
+# through the library where the *arr importers would trip over them.
+#
+# WHY VM 100 AND NOT THE PROXMOX HOST: Samba is a network file service with a
+# long CVE history. On the console-less hypervisor a compromise is a
+# *hypervisor* compromise; here it is bounded by the VM.
+#
+# NOT PUBLIC, EVER. 445 is among the most-scanned ports on the internet. There
+# is deliberately no Traefik label here, no route in homelab.yml, and no DMZ
+# hole in 100.fw. Remote access is Tailscale on VM 100 - you join the tailnet
+# and then mount the same share at the same path. Nothing about this stack
+# changes between the LAN case and the remote case.
+#
+# EXTENDED ATTRIBUTES DO NOT WORK ON THIS SHARE, and that shapes the config
+# below. Proxmox starts virtiofsd without --xattr unless the virtiofs device
+# carries expose-xattr=1, so user.* xattrs on /srv/media fail with ENOTSUP
+# (verified: they work on VM 100's own disk, they do not on the virtiofs
+# mount). The image's base smb.conf assumes they work - it ships
+# "vfs objects = catia fruit streams_xattr" with "fruit:metadata = stream" -
+# so SAMBA_GLOBAL_STANZA below overrides all three to the AppleDouble
+# fallback. Turning this on properly is `qm set 100 -virtiofs1
+# dirid=media,expose-xattr=1` plus a VM 100 STOP/START (virtiofsd is spawned
+# by the VM start task, so a guest reboot is not enough).
+#
+# NOT A PORTAINER GIT STACK, and that is forced rather than chosen. This image
+# can only create its SMB account from an ACCOUNT_<user> env var - there is no
+# _FILE variant and the passdb is regenerated from env on every start, so a
+# persisted /var/lib/samba does not avoid it. This repo is PUBLIC, and
+# env_file with a host path does not work under Portainer (Portainer runs
+# compose inside its own container and cannot read VM 100's filesystem). So
+# this stack is deployed by hand from /opt/stacks/samba, the same way the
+# portainer stack is, with the password in a gitignored .env at mode 600:
+#
+#   ssh teo@192.168.1.100
+#   cd /opt/stacks/samba && docker compose up -d
+#
+# host networking is required, not a shortcut: avahi and wsdd2 announce the
+# server over mDNS so it appears in Finder's sidebar under Network instead of
+# needing a manual Cmd-K every time, and neither survives a bridge network's
+# NAT. Check nothing else on VM 100 already binds 5353 (a host avahi-daemon
+# would collide) or 137-139/445.
+
+services:
+  samba:
+    image: ghcr.io/servercontainers/samba:latest
+    container_name: samba
+    restart: unless-stopped
+    network_mode: host
+    # The versioned tags upstream stop at s4.18.2-r0 (May 2023); :latest is the
+    # maintained stream and was rebuilt 2026-07-11. Pin a digest here if you
+    # want this reproducible.
+    env_file:
+      # ACCOUNT_teo=<password>. Mode 600, gitignored by **/.env. This is the
+      # only secret the stack has.
+      - .env
+    environment:
+      - TZ=Europe/Sofia
+
+      # uid/gid 1000 matches VM 100's teo and the 1000:1000 ownership on the
+      # host side of virtiofs, so files written from Finder land on tank owned
+      # correctly rather than as root. UID_teo is only read if ACCOUNT_teo
+      # exists - that pairing is why the account cannot move out of env.
+      - UID_teo=1000
+
+      # How the server presents itself in Finder's sidebar.
+      - AVAHI_NAME=homelab
+      - MODEL=Macmini
+      - SAMBA_CONF_SERVER_STRING=homelab
+
+      # SAMBA_GLOBAL_STANZA is undocumented but it is the only usable channel
+      # for multi-word values: the SAMBA_GLOBAL_CONFIG_* loop in the image's
+      # entrypoint iterates over an UNQUOTED $(env | grep ...), so a value
+      # containing a space is word-split and writes garbage lines into
+      # smb.conf. This one is quoted, and ';' becomes a newline.
+      # Later keys win over the base smb.conf, so these three override it:
+      #   vfs objects      - streams_xattr dropped, it needs user xattrs
+      #   fruit:metadata   - netatalk, i.e. ._ AppleDouble sidecars not xattrs
+      #   ea support       - off, nothing can honour it on this mount
+      - SAMBA_GLOBAL_STANZA=vfs objects = catia fruit; fruit:metadata = netatalk; ea support = no; server min protocol = SMB3
+
+      # Only tank/media is shared. immich is deliberately absent - that library
+      # is Immich-managed and a stray Finder move would desynchronise its
+      # database from the files on disk. /mnt/archive is host-only and is not
+      # virtiofs'd into this VM at all.
+      - SAMBA_VOLUME_CONFIG_media=[media]; path=/shares/media; valid users = teo; guest ok = no; read only = no; browseable = yes
+    volumes:
+      # tank/media via virtiofs. Hardlinks work through virtiofs and the *arr
+      # import pipeline depends on it - never remap this to a copy, and never
+      # split /data/torrents from /data/media across devices.
+      - /srv/media:/shares/media
+      # VM 100 already runs its own avahi-daemon on 0.0.0.0:5353, which would
+      # collide with the container's under host networking. Mounting this
+      # disables the internal avahi; the container instead writes and maintains
+      # samba.service here for the host daemon to advertise. The directory is
+      # otherwise empty, and the file IS overwritten - do not put anything else
+      # in it.
+      - /etc/avahi/services:/external/avahi
