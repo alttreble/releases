@@ -5,9 +5,9 @@ name: samba
 # WHY SMB AND NOT NFS: macOS dropped AFP, and Finder's NFS client has no auth,
 # no Keychain integration and no uid mapping worth the name. SMB3 is the native
 # path on macOS - it authenticates, survives sleep/wake, and this image's base
-# smb.conf already carries the vfs_fruit block (catia fruit streams_xattr,
-# fruit:metadata = stream) that stops Finder littering ._ AppleDouble files
-# through the library where the *arr importers would trip over them.
+# smb.conf already carries the vfs_fruit block that stops Finder littering ._
+# AppleDouble files through the library where the *arr importers would trip
+# over them.
 #
 # WHY VM 100 AND NOT THE PROXMOX HOST: Samba is a network file service with a
 # long CVE history. On the console-less hypervisor a compromise is a
@@ -16,37 +16,38 @@ name: samba
 # NOT PUBLIC, EVER. 445 is among the most-scanned ports on the internet. There
 # is deliberately no Traefik label here, no route in homelab.yml, and no DMZ
 # hole in 100.fw. Remote access is Tailscale on VM 100 - you join the tailnet
-# and then mount the same share at the same path. Nothing about this stack
-# changes between the LAN case and the remote case.
+# and then mount the same share at the same path.
 #
-# EXTENDED ATTRIBUTES DO NOT WORK ON THIS SHARE, and that shapes the config
-# below. Proxmox starts virtiofsd without --xattr unless the virtiofs device
-# carries expose-xattr=1, so user.* xattrs on /srv/media fail with ENOTSUP
-# (verified: they work on VM 100's own disk, they do not on the virtiofs
-# mount). The image's base smb.conf assumes they work - it ships
-# "vfs objects = catia fruit streams_xattr" with "fruit:metadata = stream" -
-# so SAMBA_GLOBAL_STANZA below overrides all three to the AppleDouble
-# fallback. Turning this on properly is `qm set 100 -virtiofs1
-# dirid=media,expose-xattr=1` plus a VM 100 STOP/START (virtiofsd is spawned
-# by the VM start task, so a guest reboot is not enough).
+# WHERE THE PASSWORDS LIVE, and why they are not in this file. This image can
+# only create an account from an ACCOUNT_<user> env var: there is no _FILE
+# variant, and the entrypoint regenerates the passdb from env on every start,
+# so persisting /var/lib/samba does not avoid it. This repo is PUBLIC, and
+# env_file with a host path does not work under Portainer (it runs compose
+# inside its own container and cannot read VM 100's filesystem). So the values
+# are interpolated from SMB_PASSWORD_* instead, supplied as **Portainer stack
+# environment variables**, which means they live in Portainer's own database.
+# That is a deliberate step down from the bind-mounted-secret pattern traefik
+# and immich use, and it is only acceptable because these are LAN/tailnet-only
+# share passwords rather than anything that can reach outside the house. The
+# Cloudflare token must still NEVER be handed to Portainer this way.
 #
-# NOT A PORTAINER GIT STACK, and that is forced rather than chosen. This image
-# can only create its SMB account from an ACCOUNT_<user> env var - there is no
-# _FILE variant and the passdb is regenerated from env on every start, so a
-# persisted /var/lib/samba does not avoid it. This repo is PUBLIC, and
-# env_file with a host path does not work under Portainer (Portainer runs
-# compose inside its own container and cannot read VM 100's filesystem). So
-# this stack is deployed by hand from /opt/stacks/samba, the same way the
-# portainer stack is, with the password in a gitignored .env at mode 600:
-#
-#   ssh teo@192.168.1.100
+# The ":?" makes compose fail loudly rather than silently creating an account
+# with an empty password. Interpolation also reads a .env sitting next to this
+# file, so a hand-deploy from /opt/stacks/samba still works unchanged:
 #   cd /opt/stacks/samba && docker compose up -d
 #
 # host networking is required, not a shortcut: avahi and wsdd2 announce the
-# server over mDNS so it appears in Finder's sidebar under Network instead of
-# needing a manual Cmd-K every time, and neither survives a bridge network's
-# NAT. Check nothing else on VM 100 already binds 5353 (a host avahi-daemon
-# would collide) or 137-139/445.
+# server over mDNS so it appears in Finder's sidebar under Network, and
+# neither survives a bridge network's NAT.
+#
+# EXTENDED ATTRIBUTES DO NOT WORK ON THIS SHARE. Proxmox starts virtiofsd
+# without --xattr unless the virtiofs device carries expose-xattr=1, so user.*
+# xattrs on /srv/media fail with ENOTSUP (verified: they work on VM 100's own
+# disk, they do not on the virtiofs mount). The image's base smb.conf assumes
+# they work, so SAMBA_GLOBAL_STANZA overrides it to the AppleDouble fallback.
+# Fixing it properly is `qm set 100 -virtiofs1 dirid=media,expose-xattr=1`
+# plus a VM 100 STOP/START - virtiofsd is forked by the VM start task, so a
+# guest reboot will not respawn it with new flags.
 
 services:
   samba:
@@ -57,18 +58,18 @@ services:
     # The versioned tags upstream stop at s4.18.2-r0 (May 2023); :latest is the
     # maintained stream and was rebuilt 2026-07-11. Pin a digest here if you
     # want this reproducible.
-    env_file:
-      # ACCOUNT_teo=<password>. Mode 600, gitignored by **/.env. This is the
-      # only secret the stack has.
-      - .env
     environment:
       - TZ=Europe/Sofia
 
-      # uid/gid 1000 matches VM 100's teo and the 1000:1000 ownership on the
-      # host side of virtiofs, so files written from Finder land on tank owned
-      # correctly rather than as root. UID_teo is only read if ACCOUNT_teo
-      # exists - that pairing is why the account cannot move out of env.
+      # -- accounts -------------------------------------------------------
+      # Each person gets their own login and password so either can be changed
+      # or revoked without touching the other. UID_<user> is only read if the
+      # matching ACCOUNT_<user> exists - that pairing is why the accounts
+      # cannot move out of env entirely.
+      - "ACCOUNT_teo=${SMB_PASSWORD_TEO:?set SMB_PASSWORD_TEO in the stack env}"
       - UID_teo=1000
+      - "ACCOUNT_iva=${SMB_PASSWORD_IVA:?set SMB_PASSWORD_IVA in the stack env}"
+      - UID_iva=1001
 
       # How the server presents itself in Finder's sidebar.
       - AVAHI_NAME=homelab
@@ -90,7 +91,13 @@ services:
       # is Immich-managed and a stray Finder move would desynchronise its
       # database from the files on disk. /mnt/archive is host-only and is not
       # virtiofs'd into this VM at all.
-      - SAMBA_VOLUME_CONFIG_media=[media]; path=/shares/media; valid users = teo; guest ok = no; read only = no; browseable = yes
+      #
+      # force user/group pins every write to teo (1000:1000) whoever logged in.
+      # The whole media tree is 1000-owned and Sonarr/Radarr/qBittorrent run at
+      # PUID 1000; without this, iva's files would land 1001:1001 and the *arr
+      # importers could no longer rewrite them. Authentication stays per-person,
+      # only the resulting file ownership is shared.
+      - SAMBA_VOLUME_CONFIG_media=[media]; path=/shares/media; valid users = teo, iva; force user = teo; force group = teo; guest ok = no; read only = no; browseable = yes
     volumes:
       # tank/media via virtiofs. Hardlinks work through virtiofs and the *arr
       # import pipeline depends on it - never remap this to a copy, and never
