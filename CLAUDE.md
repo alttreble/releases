@@ -170,6 +170,10 @@ gitignored `.env` files and bind-mounted secret files, never in a compose.
 Redeploy a git-backed stack:
 `PUT /api/stacks/<id>/git/redeploy?endpointId=1` with `{"pullImage":false}`.
 
+**Stack 8 (servarr) also polls git every 5 minutes** (`AutoUpdate.Interval:
+5m`) — a push to `trunk` lands there on its own, without a redeploy call.
+Check the others' `AutoUpdate` before assuming they do the same.
+
 VM 200's `/opt/stacks/` repo now holds only `beszel` — `excalidash` became a
 Dokploy-managed deployment on 2026-08-29. Data still lives under
 `/opt/appdata/<svc>` and secrets in `/opt/appdata/env/*.env` (mode 600).
@@ -369,7 +373,7 @@ on every one:
 | `ha` | 8123 | `prowlarr` | 9696 |
 | `hass-configurator` | 3218 | `bazarr` | 6767 |
 | `zigbee2mqtt` | 8080 | `qbittorrent` | 8084 |
-| `overseerr` (seerr) | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
+| `seerr` (alias `overseerr`) | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
 
 Plus **`plane`** and **`excalidraw`**, which run on VM 200 itself via Dokploy.
 

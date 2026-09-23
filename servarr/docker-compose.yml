@@ -120,8 +120,8 @@ services:
   # Seerr is the merged successor to Overseerr/Jellyseerr. It migrated the old
   # Overseerr database on first start; /opt/stacks/servarr/overseerr is the
   # pre-migration copy. Runs as the image's `node` user (uid 1000), so PUID/PGID
-  # are ignored and the config dir must be 1000-owned. The hostname stays
-  # overseerr.tedraykov.me so both Traefik file-provider routes keep working.
+  # are ignored and the config dir must be 1000-owned. Served as
+  # seerr.tedraykov.me, with overseerr.tedraykov.me kept as an alias.
   seerr:
     <<: *common
     image: ghcr.io/seerr-team/seerr:latest
@@ -133,7 +133,7 @@ services:
       - /opt/stacks/servarr/seerr:/app/config
     labels:
       - traefik.enable=true
-      - traefik.http.routers.seerr.rule=Host(`overseerr.tedraykov.me`)
+      - traefik.http.routers.seerr.rule=Host(`seerr.tedraykov.me`) || Host(`overseerr.tedraykov.me`)
       - traefik.http.routers.seerr.entrypoints=websecure
       - traefik.http.routers.seerr.tls=true
       - traefik.http.services.seerr.loadbalancer.server.port=5055
