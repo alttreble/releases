@@ -1,7 +1,7 @@
 name: servarr
 
 # Automated media pipeline:
-#   Overseerr (request) -> Sonarr/Radarr (search via Prowlarr) -> qBittorrent (download)
+#   Seerr (request) -> Sonarr/Radarr (search via Prowlarr) -> qBittorrent (download)
 #   -> hardlink+rename into /data/media -> Jellyfin picks it up.
 #
 # All services share a single /srv/media:/data mount so qBittorrent and the
@@ -117,20 +117,26 @@ services:
       - traefik.http.routers.bazarr.tls=true
       - traefik.http.services.bazarr.loadbalancer.server.port=6767
 
-  overseerr:
+  # Seerr is the merged successor to Overseerr/Jellyseerr. It migrated the old
+  # Overseerr database on first start; /opt/stacks/servarr/overseerr is the
+  # pre-migration copy. Runs as the image's `node` user (uid 1000), so PUID/PGID
+  # are ignored and the config dir must be 1000-owned. The hostname stays
+  # overseerr.tedraykov.me so both Traefik file-provider routes keep working.
+  seerr:
     <<: *common
-    image: lscr.io/linuxserver/overseerr:latest
-    container_name: overseerr
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
     ports:
       - 5055:5055
     volumes:
-      - /opt/stacks/servarr/overseerr:/config
+      - /opt/stacks/servarr/seerr:/app/config
     labels:
       - traefik.enable=true
-      - traefik.http.routers.overseerr.rule=Host(`overseerr.tedraykov.me`)
-      - traefik.http.routers.overseerr.entrypoints=websecure
-      - traefik.http.routers.overseerr.tls=true
-      - traefik.http.services.overseerr.loadbalancer.server.port=5055
+      - traefik.http.routers.seerr.rule=Host(`overseerr.tedraykov.me`)
+      - traefik.http.routers.seerr.entrypoints=websecure
+      - traefik.http.routers.seerr.tls=true
+      - traefik.http.services.seerr.loadbalancer.server.port=5055
 
 networks:
   proxy:

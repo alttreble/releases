@@ -107,7 +107,7 @@ consumer edits.
 | `homeassistant` | **live on VM 100** | HA, mosquitto, zigbee2mqtt, hass-configurator. `nodered` is behind `profiles: ["optional"]` — defined on `sof1` but never ran. |
 | `jellyfin` | **live on VM 100** | NVENC verified |
 | `immich` | **live on VM 100** | v3.1.0. Git-backed Portainer stack **13**. Library at `/data`, CUDA ML + NVENC. |
-| `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, overseerr, flaresolverr |
+| `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, **seerr** (replaced overseerr 2026-09-23; config `/opt/stacks/servarr/seerr`, old dir kept as rollback), flaresolverr |
 | `traefik` | **live on VM 100** | v3.7, wildcard cert |
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
 | `samba` | **live on VM 100** | SMB for macOS Finder. Hand-deployed from `/opt/stacks/samba`, **not** a Portainer stack — the image can only take its account from `ACCOUNT_teo`, and this repo is public. LAN + Tailscale only. |
@@ -369,7 +369,7 @@ on every one:
 | `ha` | 8123 | `prowlarr` | 9696 |
 | `hass-configurator` | 3218 | `bazarr` | 6767 |
 | `zigbee2mqtt` | 8080 | `qbittorrent` | 8084 |
-| `overseerr` | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
+| `overseerr` (seerr) | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
 
 Plus **`plane`** and **`excalidraw`**, which run on VM 200 itself via Dokploy.
 
