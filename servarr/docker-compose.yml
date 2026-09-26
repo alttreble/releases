@@ -117,9 +117,9 @@ services:
       - traefik.http.routers.bazarr.tls=true
       - traefik.http.services.bazarr.loadbalancer.server.port=6767
 
-  # Seerr is the merged successor to Overseerr/Jellyseerr. It migrated the old
-  # Overseerr database on first start; /opt/stacks/servarr/overseerr is the
-  # pre-migration copy. Runs as the image's `node` user (uid 1000), so PUID/PGID
+  # Seerr is the merged successor to Overseerr/Jellyseerr, set up fresh against
+  # Jellyfin (reached as `jellyfin:8096` over the shared proxy network).
+  # Runs as the image's `node` user (uid 1000), so PUID/PGID
   # are ignored and the config dir must be 1000-owned. Served as
   # seerr.tedraykov.me, with overseerr.tedraykov.me kept as an alias.
   seerr:
