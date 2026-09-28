@@ -1,13 +1,13 @@
 name: servarr
 
 # Automated media pipeline:
-#   Seerr (request) -> Sonarr/Radarr (search via Prowlarr) -> qBittorrent (download)
+#   Seerr (request) -> Sonarr/Radarr/Readarr (search via Prowlarr) -> qBittorrent (download)
 #   -> hardlink+rename into /data/media -> Jellyfin picks it up.
 #
 # All services share a single /srv/media:/data mount so qBittorrent and the
 # *arr apps can hardlink (instant moves, no double disk usage). Required layout:
-#   /srv/media/torrents/{movies,tv}   <- qBittorrent saves here
-#   /srv/media/media/{movies,tv}      <- *arr imports here, Jellyfin reads here
+#   /srv/media/torrents/{movies,tv,books}   <- qBittorrent saves here
+#   /srv/media/media/{movies,tv,books}      <- *arr imports here, Jellyfin reads here
 
 # Host ports are published deliberately. Traefik on VM 100 still routes via
 # its file provider (http://192.168.1.100:<port>), and the DMZ Traefik on
@@ -79,6 +79,27 @@ services:
       - traefik.http.routers.radarr.entrypoints=websecure
       - traefik.http.routers.radarr.tls=true
       - traefik.http.services.radarr.loadbalancer.server.port=7878
+
+  # Readarr itself is retired: its metadata server is dead and linuxserver
+  # pulled the image. Bookshelf is the maintained fork, built on the same
+  # linuxserver base (so PUID/PGID apply). The `hardcover` tag uses Hardcover
+  # metadata and cannot open an old Readarr database; `softcover` (Goodreads)
+  # can, if one is ever migrated in. Books land in /data/media/books.
+  readarr:
+    <<: *common
+    image: ghcr.io/pennydreadful/bookshelf:hardcover
+    container_name: readarr
+    ports:
+      - 8787:8787
+    volumes:
+      - /opt/stacks/servarr/readarr:/config
+      - /srv/media:/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.readarr.rule=Host(`readarr.tedraykov.me`)
+      - traefik.http.routers.readarr.entrypoints=websecure
+      - traefik.http.routers.readarr.tls=true
+      - traefik.http.services.readarr.loadbalancer.server.port=8787
 
   qbittorrent:
     <<: *common

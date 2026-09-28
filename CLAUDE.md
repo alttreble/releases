@@ -107,7 +107,7 @@ consumer edits.
 | `homeassistant` | **live on VM 100** | HA, mosquitto, zigbee2mqtt, hass-configurator. `nodered` is behind `profiles: ["optional"]` — defined on `sof1` but never ran. |
 | `jellyfin` | **live on VM 100** | NVENC verified |
 | `immich` | **live on VM 100** | v3.1.0. Git-backed Portainer stack **13**. Library at `/data`, CUDA ML + NVENC. |
-| `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, **seerr** (replaced overseerr 2026-09-23, rebuilt from scratch on **Jellyfin** — the migrated install was still wired to the dead `sof1` Plex; old data deleted 2026-09-26), flaresolverr |
+| `servarr` | **live on VM 100** | sonarr, radarr, prowlarr, bazarr, qbittorrent, **seerr** (replaced overseerr 2026-09-23, rebuilt from scratch on **Jellyfin** — the migrated install was still wired to the dead `sof1` Plex; old data deleted 2026-09-26), flaresolverr, **readarr** (added 2026-09-28 — actually the **Bookshelf** fork `ghcr.io/pennydreadful/bookshelf:hardcover`, since Readarr is retired; `:8787`, books in `/srv/media/media/books`) |
 | `traefik` | **live on VM 100** | v3.7, wildcard cert |
 | `portainer` | **live on VM 100** | deployed from `/opt/stacks/portainer/compose.yaml`, not via Portainer itself |
 | `samba` | **live on VM 100** | SMB for macOS Finder. Hand-deployed from `/opt/stacks/samba`, **not** a Portainer stack — the image can only take its account from `ACCOUNT_teo`, and this repo is public. LAN + Tailscale only. |
@@ -374,6 +374,7 @@ on every one:
 | `hass-configurator` | 3218 | `bazarr` | 6767 |
 | `zigbee2mqtt` | 8080 | `qbittorrent` | 8084 |
 | `seerr` (alias `overseerr`) | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
+| `readarr` (added 2026-09-28) | 8787 | | |
 
 Plus **`plane`** and **`excalidraw`**, which run on VM 200 itself via Dokploy.
 
