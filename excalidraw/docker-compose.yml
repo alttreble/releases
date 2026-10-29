@@ -19,7 +19,7 @@ name: excalidash
 
 services:
   backend:
-    image: zimengxiong/excalidash-backend:latest
+    image: zimengxiong/excalidash-backend:0.6.6
     container_name: excalidash-backend
     restart: unless-stopped
     environment:
@@ -53,7 +53,7 @@ services:
       retries: 3
 
   frontend:
-    image: zimengxiong/excalidash-frontend:latest
+    image: zimengxiong/excalidash-frontend:0.6.6
     container_name: excalidash-frontend
     restart: unless-stopped
     depends_on:
