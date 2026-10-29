@@ -12,8 +12,10 @@ name: excalidash
 #   - certResolver is `letsencrypt` (HTTP-01). VM 100 uses `cloudflare`
 #     (DNS-01), whose token must never be present on this VM.
 #
-# JWT_SECRET / CSRF_SECRET / AUTH_MODE come from the Dokploy service's own
-# Environment settings. Changing JWT_SECRET invalidates every existing session.
+# JWT_SECRET / CSRF_SECRET / AUTH_MODE / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET
+# come from the Dokploy service's own Environment settings. Dokploy only uses
+# that env for ${...} interpolation here: a variable not referenced below never
+# reaches the container. Changing JWT_SECRET invalidates every existing session.
 
 services:
   backend:
@@ -29,6 +31,13 @@ services:
       - AUTH_MODE=${AUTH_MODE:-local}
       - JWT_SECRET=${JWT_SECRET}
       - CSRF_SECRET=${CSRF_SECRET}
+      # Google sign-in. Only takes effect with AUTH_MODE=hybrid|oidc_enforced.
+      # Register exactly this redirect URI on the Google OAuth client.
+      - OIDC_PROVIDER_NAME=Google
+      - OIDC_ISSUER_URL=https://accounts.google.com
+      - OIDC_REDIRECT_URI=https://excalidraw.tedraykov.me/api/auth/oidc/callback
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
     volumes:
       - /opt/appdata/excalidash:/app/prisma
     networks:
