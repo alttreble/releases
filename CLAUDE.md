@@ -43,7 +43,7 @@ there, unlike VM 100).
 | Guest | Spec | Zone | Runs |
 |---|---|---|---|
 | VM 100 `homelab` | 6 vCPU, **10 GB pinned**, GPU | trusted | Docker: Jellyfin, Immich, Home Assistant + Zigbee, the \*arr stack, Traefik, Portainer, Beszel |
-| VM 200 `dokploy` | 4 vCPU, **12 GB max / 6 GB balloon floor** | DMZ | Dokploy PaaS — Plane, MinIO, excalidash, plus tenants. The only VM the router forwards to. |
+| VM 200 `dokploy` | 4 vCPU, **12 GB max / 6 GB balloon floor** | DMZ | Dokploy PaaS — ERPNext (+ Wiki), excalidash, plus tenants. The only VM the router forwards to. |
 | LXC 300 `dns` | 1 vCPU, 512 MB | trusted | AdGuard Home — split-horizon DNS + ad blocking |
 
 ## Memory — rebalanced 2026-08-29
@@ -281,7 +281,7 @@ relying on NAT hairpin (which the Huawei ONT was never confirmed to do).
 
 - Upstream: `https://dns10.quad9.net/dns-query` (DoH), bootstrap `9.9.9.10`
 - **`*.tedraykov.me` → `192.168.1.100`** (wildcard, VM 100's Traefik)
-- Per-name overrides → `192.168.1.200` for the DMZ apps: `excalidraw`, `plane`
+- Per-name overrides → `192.168.1.200` for the DMZ apps: `excalidraw`, `dokploy`, `creatives`, `clerk`. (The `plane` override was removed 2026-11-12; backup `AdGuardHome.yaml.bak-preplane-removal`. The `*.tedraykov.me → .100` wildcard is currently `enabled: false` on the live box, so names without an override resolve publicly.)
   (backups: `/opt/AdGuardHome/AdGuardHome.yaml.bak-*`)
 
 So a LAN client goes straight to the serving VM; the public internet goes
@@ -376,7 +376,7 @@ on every one:
 | `seerr` (alias `overseerr`) | 5055 | `portainer` | 9443 (https, insecureSkipVerify) |
 | `readarr` (added 2026-09-28) | 8787 | | |
 
-Plus **`plane`** and **`excalidraw`**, which run on VM 200 itself via Dokploy.
+Plus **`erp`** (ERPNext + Wiki) and **`excalidraw`**, which run on VM 200 itself via Dokploy.
 
 ## DNS is now a single wildcard record
 
@@ -814,7 +814,7 @@ There are two ways a domain can reach Traefik, and they should not be mixed:
 | Router names | generated, e.g. `alt-treble-plane-gxu4db-2-web` | whatever you name them |
 | Shows in Dokploy UI | yes | no |
 | Survives a rebuild from git alone | no — needs the DB | **yes** |
-| Used by | `plane` | `excalidash` |
+| Used by | `erpnext-v16` (domain `erp`) | `excalidash` |
 
 The declarative version is the better default here: the domain lives in git next
 to the service, and a rebuild from a clean Dokploy needs nothing but this repo.
@@ -894,13 +894,13 @@ token must never be handed to Dokploy.
 
 | Service | composeId | Source |
 |---|---|---|
-| `plane` | `RwDSRUW6bYlF8ZP3IZTQH` | `raw` — compose pasted into the UI |
+| `erpnext-v16` | `Ng2Raiu0iLNG02_cskN-k` | `raw` — Dokploy ERPNext v16 template; image swapped to `ghcr.io/alttreble/erpnext-wiki` |
 | `excalidash` | `dVMNVxK1ljWL5o2nhWloP` | **`git`** — `alttreble/releases` @ `trunk`, `./excalidraw/docker-compose.yml` |
 
 ## Dokploy
 
 **v0.30.2**, Docker Swarm single node. Traefik **v3.6.7** (VM 100 runs v3.7).
-UI at http://192.168.1.200:3000 — **admin account exists**, Plane is deployed
+UI at http://192.168.1.200:3000 — **admin account exists**, ERPNext is deployed
 through it. ACME email `business@tedraykov.me` in
 `/etc/dokploy/traefik/traefik.yml`; resolver `letsencrypt`, **HTTP-01** on the
 `web` entrypoint.
@@ -909,7 +909,7 @@ through it. ACME email `business@tedraykov.me` in
 
 | Service | State |
 |---|---|
-| Plane v1.3.1 (13 containers) | **up, public at `plane.tedraykov.me`** |
+| ERPNext v16 + Wiki 3.4.0 (11 containers, ~1 GB) | **up, public at `erp.tedraykov.me`**; wiki UI at `/wiki-app` |
 | excalidash frontend/backend | up, HTTP-only, not public |
 | beszel-agent | up |
 
@@ -1145,3 +1145,40 @@ forward, which is why nothing could issue before the cutover.
   assuming it. **Read the running container's labels rather than trusting a
   compose file** — that is what caught the stale-stack-93 trap on `sof1`.
 - This machine has no console. If a change could affect boot, say so first.
+
+---
+
+# ERPNext + Wiki on VM 200 (2026-11-12)
+
+**Plane was removed on 2026-11-12**, deliberately and without a data backup —
+ERPNext (Projects/Tasks) replaces it as the PM tool and **Frappe Wiki** is the
+wiki. Plane's Workspace Wiki is paid-only (Commercial edition); Community has
+Project Pages only.
+
+- **Apps live in the image, not the `sites` volume.** The stock
+  `frappe/erpnext` image has no wiki, and `bench get-app` inside a running
+  container is lost on redeploy. `erpnext/apps.json` (erpnext `version-16`, wiki
+  tag `v3.4.0`) is built by `.github/workflows/erpnext-image.yml` using
+  frappe_docker's layered Containerfile — apps.json goes in as a **build
+  secret** (`id=apps_json`), not the old `APPS_JSON_BASE64` arg — and pushed to
+  **`ghcr.io/alttreble/erpnext-wiki:version-16`**.
+- **To add or bump an app:** edit `erpnext/apps.json`, push to `trunk` (workflow
+  rebuilds), redeploy the Dokploy service, then on the backend container
+  `bench --site erp.tedraykov.me install-app <app>` and `bench migrate`. The
+  Dokploy env only needs `IMAGE_NAME=ghcr.io/alttreble/erpnext-wiki`,
+  `VERSION=version-16`.
+- **The package is private.** A Dokploy *registry* (`ghcr-alttreble`) exists,
+  but it does **not** apply to Compose stacks — `docker compose up` runs on the
+  host with the host's credentials. What actually works is
+  `docker login ghcr.io` as root on VM 200 (`/root/.docker/config.json`, mode
+  600). The token is a classic PAT with **`read:packages` only**, stored in
+  Bitwarden on the `github.com` (personal) item, field `gcr_api_key`. It sits on
+  the DMZ VM, so anyone who can deploy code on Dokploy can read it; classic PATs
+  expire, and an expired one breaks the next `pull_policy: always` redeploy.
+- **The wiki is at `/wiki-app`, not `/wiki`** (route rule in wiki's `hooks.py`).
+  Spaces are created in the app; the desk list is `/app/wiki-space`.
+- Pre-change safety: Proxmox snapshot `pre-wiki` on VM 200, and a
+  `bench backup --with-files` in the site's `private/backups/`. Delete the
+  snapshot once the wiki is trusted.
+- Dokploy API key lives in Bitwarden (item `Dokploy`, field `API_KEY`). The
+  `api_key` file in the repo root is stale and returns 401.
