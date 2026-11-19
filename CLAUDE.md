@@ -19,6 +19,7 @@ Last verified against live infrastructure: **2026-08-31**.
 | VM 100 (homelab) | `teo@192.168.1.100` |
 | VM 200 (dokploy) | `teo@192.168.1.200` |
 | LXC 300 (dns) | `192.168.1.53` |
+| LXC 400 (runner) | `192.168.1.40`, tailnet `runner` / `100.78.199.104` |
 | SSH | key-based everywhere, no password prompt |
 | Display attached | **none, ever** — network access only |
 
@@ -45,6 +46,7 @@ there, unlike VM 100).
 | VM 100 `homelab` | 6 vCPU, **10 GB pinned**, GPU | trusted | Docker: Jellyfin, Immich, Home Assistant + Zigbee, the \*arr stack, Traefik, Portainer, Beszel |
 | VM 200 `dokploy` | 4 vCPU, **12 GB max / 6 GB balloon floor** | DMZ | Dokploy PaaS — ERPNext (+ Wiki), excalidash, plus tenants. The only VM the router forwards to. |
 | LXC 300 `dns` | 1 vCPU, 512 MB | trusted | AdGuard Home — split-horizon DNS + ad blocking |
+| LXC 400 `runner` | 4 vCPU, 6 GB, unprivileged | **hostile** | Personal agent box (Claude Code) + GitHub runner. See *LXC 400* below. |
 
 ## Memory — rebalanced 2026-08-29
 
@@ -265,6 +267,7 @@ the router cannot filter it. Isolation happens at the hypervisor or not at all.
 | VM 100 homelab | `192.168.1.100` |
 | VM 200 dokploy | `192.168.1.200` |
 | LXC 300 dns | `192.168.1.53` |
+| LXC 400 runner | `192.168.1.40` |
 | Public IPv4 | `83.228.116.18` |
 
 Matching the VMID is deliberate — the firewall IPSets depend on these.
@@ -768,6 +771,36 @@ now blocked (no OAuth), and an x86-64-v2 CPU floor (met by a Ryzen 5 5600 as
 `pre-desktop`, `pre-driver-upgrade`, `desktop-working`. The last is the good
 checkpoint (generic kernel, driver 610, Sunshine + input working). Delete the
 first two once the desktop is confirmed stable.
+
+---
+
+# LXC 400 — runner, the agent box (Tailscale added 2026-11-20)
+
+Debian 13, unprivileged, `nesting=1`. A **self-hosted agent box**: Claude Code
+sessions that work *for* you on other projects, plus a GitHub runner. It runs
+agent-written code, so it is **assumed hostile** and **must never work on the
+home lab** — home-lab work through an agent happens on VM 100 instead.
+
+- **Proxmox firewall** (`/etc/pve/firewall/400.fw`): IPv6 egress dropped, LAN
+  egress dropped, inbound only 22 + icmp from the LAN. Internet egress is open.
+  The old Plane `OUT ACCEPT 192.168.1.200:443` rule was removed 2026-11-20
+  (backup `/root/400.fw.bak-preplane-removal` on the host).
+- **Tailscale** 1.104.7, joined as **`tag:runner`** (`runner.tail9e59c0.ts.net`,
+  `100.78.199.104`) with `--ssh`. Reach it with `ssh root@runner` — Tailscale SSH,
+  `check` mode, no keys.
+- **`tailscaled` runs with `--tun=userspace-networking`** (`/etc/default/tailscaled`).
+  Deliberate: no TUN device, no LXC config change, and no `tailscale0` interface
+  that container processes could route through.
+- **Isolation on the tailnet is the policy, not the firewall.** The tailnet
+  includes `proxmox` and `homelab` as your user. The only grant is
+  `src: autogroup:member`, so **tagged devices initiate nothing** — the runner
+  (like `tag:dmz` dokploy) can only be connected *to*. The policy carries a
+  `tests` block asserting `tag:runner` is denied to homelab, proxmox and the
+  MacBook; Tailscale rejects any edit that breaks it. **Never join this box
+  untagged** — it would inherit your identity and reach the Proxmox host.
+- Tailscale API key: Bitwarden item `Tailscale`, field `API_KEY`.
+- **RAM:** its 6 GB is not in the 27.6 GiB worst-case commit above — with it the
+  sum exceeds 31 GiB. It relies on LXC memory being used, not reserved.
 
 ---
 
